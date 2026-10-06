@@ -101,8 +101,6 @@ tr.owned .name{color:#2ecc71}
 .detail-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1f2b4a;font-size:13px}
 .detail-row .dl{color:#888}
 .detail-row .dv{color:#4fc3f7;font-weight:bold}
-.rank-board{background:#1a1a2e;border:1px solid #0f3460;border-radius:8px;padding:14px;margin-bottom:12px}
-.rank-board h4{color:#f0c040;font-size:14px;margin-bottom:8px}
 .rank-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1f2b4a;font-size:13px}
 .rank-row .rn{color:#fff}
 .rank-row .rp{color:#f0c040;font-weight:bold}
@@ -238,7 +236,7 @@ tr.owned .name{color:#2ecc71}
 <div class="modal" id="giftModal">
   <div class="modal-box">
     <h3>🎁 新手礼包</h3>
-    <p class="hint">随机获得一名华夏武将（排名21-40）和一名华夏谋士（排名21-40）</p>
+    <p class="hint">随机获得一名华夏武将和一名华夏谋士</p>
     <div class="row"><button class="btn gold" onclick="claimGift()">开启礼包</button></div>
   </div>
 </div>
@@ -285,11 +283,11 @@ tr.owned .name{color:#2ecc71}
       <option value="book">兵书（智力）</option>
       <option value="abacus">金算盘（后勤）</option>
     </select>
-    <input id="adminItemQty" type="number" min="1" value="10" placeholder="数量">
+    <input id="adminItemQty" type="number" min="1" value="10">
     <div class="row"><button class="btn gold" onclick="adminAddItem()">添加道具</button></div>
     <h4>添加信物</h4>
     <input id="adminTokenName" placeholder="输入人名（如：秦琼）">
-    <input id="adminTokenQty" type="number" min="1" value="10" placeholder="数量">
+    <input id="adminTokenQty" type="number" min="1" value="10">
     <div class="row"><button class="btn gold" onclick="adminAddToken()">添加信物</button></div>
     <h4>当前收藏</h4>
     <div class="owned-list" id="ownedList"></div>
@@ -331,10 +329,7 @@ tr.owned .name{color:#2ecc71}
 <div class="modal" id="backpackModal">
   <div class="modal-box" style="max-width:640px">
     <h3>🎒 背包</h3>
-    <div class="inv-tabs" id="invTabs">
-      <button class="active" onclick="switchInvTab('token')">信物</button>
-      <button onclick="switchInvTab('item')">道具</button>
-    </div>
+    <div class="inv-tabs" id="invTabs"></div>
     <div id="invPanel"></div>
     <div class="row" style="margin-top:10px"><button class="btn" onclick="closeModal('backpackModal')">关闭</button></div>
   </div>
@@ -345,9 +340,7 @@ tr.owned .name{color:#2ecc71}
   <div class="modal-box">
     <h3 id="detailTitle">名臣详情</h3>
     <div id="detailPanel"></div>
-    <div class="row" style="margin-top:10px">
-      <button class="btn" onclick="closeModal('detailModal')">关闭</button>
-    </div>
+    <div class="row" style="margin-top:10px"><button class="btn" onclick="closeModal('detailModal')">关闭</button></div>
   </div>
 </div>
 
@@ -375,7 +368,6 @@ tr.owned .name{color:#2ecc71}
 <div class="modal" id="shopModal">
   <div class="modal-box">
     <h3>🏪 商店 · 好感度道具</h3>
-    <p class="hint">道具对应不同榜单的名臣，赠送后提升好感度</p>
     <div class="shop-grid" id="shopGrid"></div>
     <div class="row" style="margin-top:10px"><button class="btn" onclick="closeModal('shopModal')">关闭</button></div>
   </div>
@@ -385,7 +377,7 @@ tr.owned .name{color:#2ecc71}
 <div class="modal" id="jobModal">
   <div class="modal-box">
     <h3>💼 打工</h3>
-    <p class="hint">消耗体力赚取积分 · 当前体力 <span id="jobStamina">10</span>/10</p>
+    <p class="hint">当前体力 <span id="jobStamina">10</span>/10</p>
     <div id="jobList"></div>
     <div class="row" style="margin-top:10px"><button class="btn" onclick="closeModal('jobModal')">关闭</button></div>
   </div>
@@ -408,7 +400,7 @@ tr.owned .name{color:#2ecc71}
 <div class="modal" id="battleModal">
   <div class="modal-box">
     <h3 id="battleTitle">生死擂台</h3>
-    <p class="hint" id="battleHint">选择难度开始对决</p>
+    <p class="hint" id="battleHint"></p>
     <div class="diff-grid" id="diffGrid"></div>
     <div class="row" style="margin-top:10px"><button class="btn" onclick="closeModal('battleModal')">取消</button></div>
   </div>
@@ -439,8 +431,19 @@ tr.owned .name{color:#2ecc71}
 
 <script>
 /* ============================================================
-   数据区：华夏（DATA_HX，示例前20条，请自行补到100）
-   格式：[排名,"朝代","皇帝","人名",数值]
+   全局错误捕获（便于定位问题）
+   ============================================================ */
+window.onerror = function(msg, src, line, col, err){
+  console.error("运行时错误：", msg, "行", line, "列", col, err);
+};
+
+/* ============================================================
+   存档版本
+   ============================================================ */
+const SAVE_VERSION = 3;
+
+/* ============================================================
+   数据区：华夏（DATA_HX，前20条示例，请自行补到100）
    ============================================================ */
 const DATA = {
 force: [
@@ -660,7 +663,6 @@ advOverall: [
 [100,"清","清圣祖","靳辅",40]
 ]
 };
-
 
 /* ============================================================
    数据区：日本（DATA_JP，完整100条）
@@ -928,7 +930,8 @@ const SHOP_TIERS = {
   "S+": { price:200, gain:35 }
 };
 
-let state = {
+const DEFAULT_STATE = () => ({
+  _v: SAVE_VERSION,
   points: 100,
   stamina: 10,
   day: 1,
@@ -940,7 +943,9 @@ let state = {
   admin: false,
   log: [],
   leaderboard: { "华夏": 50, "日本": 1000 }
-};
+});
+
+let state = DEFAULT_STATE();
 
 let pickContext = null;
 let duelContext = null;
@@ -948,60 +953,107 @@ let currentDetailItem = null;
 let giveContext = null;
 let invTab = "token";
 
-function save(){ localStorage.setItem("guoyun_save", JSON.stringify(state)); }
+/* ============================================================
+   存档
+   ============================================================ */
+function save(){
+  state._v = SAVE_VERSION;
+  try{ localStorage.setItem("guoyun_save", JSON.stringify(state)); }catch(e){ console.warn("存档失败", e); }
+}
 function load(){
   const s = localStorage.getItem("guoyun_save");
-  if(s){ try{ state = Object.assign(state, JSON.parse(s)); }catch(e){} }
-  if(!state.items) state.items = { weapon:0, sandbox:0, book:0, abacus:0 };
-  if(!state.leaderboard) state.leaderboard = { "华夏": 50, "日本": 1000 };
-  if(state.leaderboard["日本"] === undefined) state.leaderboard["日本"] = 1000;
-  if(state.leaderboard["华夏"] === undefined) state.leaderboard["华夏"] = 50;
-  if(!state.stamina) state.stamina = 10;
-  if(!state.day) state.day = 1;
-  if(state.introSeen === undefined) state.introSeen = false;
+  if(!s) return;
+  let parsed = null;
+  try{ parsed = JSON.parse(s); }catch(e){ console.warn("存档解析失败", e); return; }
+
+  // 版本不匹配或关键结构缺失 → 重置
+  if(!parsed || typeof parsed !== "object" || parsed._v !== SAVE_VERSION){
+    console.warn("存档版本不兼容，已重置");
+    localStorage.removeItem("guoyun_save");
+    state = DEFAULT_STATE();
+    return;
+  }
+
+  // 类型严格合并
+  if(typeof parsed.points === "number") state.points = parsed.points;
+  if(typeof parsed.stamina === "number") state.stamina = parsed.stamina;
+  if(typeof parsed.day === "number") state.day = parsed.day;
+  if(typeof parsed.giftClaimed === "boolean") state.giftClaimed = parsed.giftClaimed;
+  if(typeof parsed.introSeen === "boolean") state.introSeen = parsed.introSeen;
+  if(typeof parsed.admin === "boolean") state.admin = parsed.admin;
+  if(Array.isArray(parsed.owned)) state.owned = parsed.owned;
+  if(Array.isArray(parsed.tokens)) state.tokens = parsed.tokens;
+  if(Array.isArray(parsed.log)) state.log = parsed.log;
+  if(parsed.items && typeof parsed.items === "object"){
+    state.items = Object.assign({ weapon:0, sandbox:0, book:0, abacus:0 }, parsed.items);
+  }
+  if(parsed.leaderboard && typeof parsed.leaderboard === "object"){
+    state.leaderboard = Object.assign({ "华夏": 50, "日本": 1000 }, parsed.leaderboard);
+  }
+  // 确保 leaderboard 键存在
+  if(typeof state.leaderboard["华夏"] !== "number") state.leaderboard["华夏"] = 50;
+  if(typeof state.leaderboard["日本"] !== "number") state.leaderboard["日本"] = 1000;
 }
 function addLog(msg){
   const t = new Date().toLocaleTimeString();
+  if(!Array.isArray(state.log)) state.log = [];
   state.log.unshift(`[${t}] ${msg}`);
   if(state.log.length > 100) state.log.pop();
   save(); renderAdminLog();
 }
-function closeModal(id){ document.getElementById(id).classList.remove("show"); }
-function openModal(id){ document.getElementById(id).classList.add("show"); }
+function closeModal(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.remove("show");
+}
+function openModal(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.add("show");
+  else console.warn("未找到弹窗：" + id);
+}
 
+/* ============================================================
+   工具
+   ============================================================ */
 function pickFromData(dataRef, boardKey, minRank, maxRank){
-  const all = dataRef[boardKey] || [];
+  const all = (dataRef && dataRef[boardKey]) || [];
+  if(all.length === 0) return null;
   let pool = all.filter(x => x[0] >= minRank && x[0] <= maxRank);
   if(pool.length === 0) pool = all;
   return pool[Math.floor(Math.random() * pool.length)];
 }
 function pickAnyFromData(dataRef, boardKey){
-  const all = dataRef[boardKey] || [];
+  const all = (dataRef && dataRef[boardKey]) || [];
+  if(all.length === 0) return null;
   return all[Math.floor(Math.random() * all.length)];
 }
 function isOwned(boardKey, rank){
+  if(!Array.isArray(state.owned)) return false;
   return state.owned.some(o => o.boardKey === boardKey && o.rank === rank);
 }
-
 function renderTop(){
-  document.getElementById("points").textContent = state.points;
-  document.getElementById("stamina").textContent = state.stamina;
-  document.getElementById("day").textContent = state.day;
+  const p = document.getElementById("points");
+  const s = document.getElementById("stamina");
+  const d = document.getElementById("day");
+  if(p) p.textContent = state.points;
+  if(s) s.textContent = state.stamina;
+  if(d) d.textContent = state.day;
 }
 
 /* ============================================================
-   开场剧情
+   开场
    ============================================================ */
 function closeIntro(){
   state.introSeen = true;
   save();
-  document.getElementById("introOverlay").style.display = "none";
-  document.getElementById("gameRoot").style.display = "block";
+  const ov = document.getElementById("introOverlay");
+  const gr = document.getElementById("gameRoot");
+  if(ov) ov.style.display = "none";
+  if(gr) gr.style.display = "block";
   renderTop();
 }
 
 /* ============================================================
-   属性与好感度
+   属性
    ============================================================ */
 function calcFavorBonus(favor){ return Math.floor((favor || 0) / 10); }
 function calcBaseHp(rank){ return Math.round(100 + (100 - rank) * 9.09); }
@@ -1012,6 +1064,7 @@ function calcBaseCritDmg(value){ return Math.min(500, Math.round((100 + value * 
 
 function buildOwnedItem(boardKey, row){
   const b = BOARDS.find(x => x.key === boardKey);
+  if(!b || !row) return null;
   return {
     boardKey, rank:row[0], dynasty:row[1], emperor:row[2], name:row[3], value:row[4],
     label:b.label, type:b.type,
@@ -1021,6 +1074,7 @@ function buildOwnedItem(boardKey, row){
   };
 }
 function getItemStats(item){
+  if(!item) return { hp:0, atk:0, def:0, critRate:0, critDmg:0, effValue:0, favorBonus:0 };
   const effValue = item.value + calcFavorBonus(item.favor);
   return {
     hp: calcBaseHp(item.rank),
@@ -1038,6 +1092,7 @@ function getItemStats(item){
    背包
    ============================================================ */
 function addToken(name, dynasty, emperor){
+  if(!Array.isArray(state.tokens)) state.tokens = [];
   let t = state.tokens.find(x => x.name === name);
   if(t){ t.count++; }
   else { state.tokens.push({ name, dynasty, emperor, count:1 }); }
@@ -1059,6 +1114,7 @@ function openBackpack(){
 function switchInvTab(t){ invTab = t; renderInvTabs(); renderInvPanel(); }
 function renderInvTabs(){
   const el = document.getElementById("invTabs");
+  if(!el) return;
   el.innerHTML = `
     <button class="${invTab === 'token' ? 'active' : ''}" onclick="switchInvTab('token')">信物</button>
     <button class="${invTab === 'item' ? 'active' : ''}" onclick="switchInvTab('item')">道具</button>
@@ -1066,8 +1122,9 @@ function renderInvTabs(){
 }
 function renderInvPanel(){
   const el = document.getElementById("invPanel");
+  if(!el) return;
   if(invTab === "token"){
-    if(state.tokens.length === 0){
+    if(!state.tokens || state.tokens.length === 0){
       el.innerHTML = `<div class="collect-empty">暂无信物，抽到重复名臣可获得</div>`;
       return;
     }
@@ -1078,7 +1135,7 @@ function renderInvPanel(){
   } else {
     const rows = [];
     Object.keys(ITEM_DEFS).forEach(k => {
-      const cnt = state.items[k] || 0;
+      const cnt = (state.items && state.items[k]) || 0;
       rows.push(`<tr><td class="name">${ITEM_DEFS[k].name}</td><td class="score">${cnt}</td>
         <td><button class="btn small gold" onclick="openGive('item', '${k}')" ${cnt<=0?'disabled':''}>赠送</button></td></tr>`);
     });
@@ -1091,10 +1148,11 @@ function renderInvPanel(){
    ============================================================ */
 function openGive(kind, key){
   giveContext = { kind, key, qty: 1, targetIdx: -1 };
-  if(kind === "token"){
-    document.getElementById("giveHint").textContent = `选择要赠送给哪位名臣「${key}的信物」`;
-  } else {
-    document.getElementById("giveHint").textContent = `选择要赠送给哪位名臣「${ITEM_DEFS[key].name}」`;
+  const hint = document.getElementById("giveHint");
+  if(hint){
+    hint.textContent = kind === "token"
+      ? `选择要赠送给哪位名臣「${key}的信物」`
+      : `选择要赠送给哪位名臣「${ITEM_DEFS[key].name}」`;
   }
   const listHtml = `<h4>选择目标名臣</h4><div class="pick-list" id="giveTargetList">` +
     state.owned.map((o, i) => {
@@ -1108,31 +1166,36 @@ function openGive(kind, key){
         <div class="pi-val">${o.value}</div>
       </div>`;
     }).join("") + `</div>`;
-  document.getElementById("giveExtra").innerHTML = listHtml + (kind === "token" ?
-    `<h4>选择加成方向</h4>
-     <select id="giveBonusType">
-       <option value="critRate">暴击率 +5%</option>
-       <option value="critDmg">暴击伤害 +20%</option>
-     </select>` : "");
+  const extra = document.getElementById("giveExtra");
+  if(extra){
+    extra.innerHTML = listHtml + (kind === "token" ?
+      `<h4>选择加成方向</h4>
+       <select id="giveBonusType">
+         <option value="critRate">暴击率 +5%</option>
+         <option value="critDmg">暴击伤害 +20%</option>
+       </select>` : "");
+  }
   document.querySelectorAll("#qtyRow button").forEach(b => b.classList.remove("selected"));
-  document.querySelector("#qtyRow button").classList.add("selected");
+  const firstQty = document.querySelector("#qtyRow button");
+  if(firstQty) firstQty.classList.add("selected");
   openModal("giveModal");
 }
 function selectQty(q){
-  giveContext.qty = q;
+  if(giveContext) giveContext.qty = q;
   document.querySelectorAll("#qtyRow button").forEach(b => {
     b.classList.remove("selected");
     if(parseInt(b.textContent) === q) b.classList.add("selected");
   });
 }
 function selectGiveTarget(i){
-  giveContext.targetIdx = i;
+  if(giveContext) giveContext.targetIdx = i;
   document.querySelectorAll("#giveExtra .pick-item").forEach(x => x.classList.remove("selected"));
-  document.getElementById("giveTarget-" + i).classList.add("selected");
+  const el = document.getElementById("giveTarget-" + i);
+  if(el) el.classList.add("selected");
 }
 function confirmGive(){
   const gc = giveContext;
-  if(gc.targetIdx < 0){ alert("请选择目标名臣"); return; }
+  if(!gc || gc.targetIdx < 0){ alert("请选择目标名臣"); return; }
   const item = state.owned[gc.targetIdx];
   if(!item) return;
 
@@ -1167,7 +1230,7 @@ function confirmGive(){
        ${converted > 0 ? `<div class="v" style="color:#f0c040">${converted}个转化为${converted*10}积分</div>` : ""}</div>`,
       `<span class="win">赠送完成！</span>`);
   } else {
-    const cnt = state.items[gc.key] || 0;
+    const cnt = (state.items && state.items[gc.key]) || 0;
     if(cnt <= 0){ alert("道具不足"); return; }
     const qty = Math.min(gc.qty, cnt);
     const gain = ITEM_DEFS[gc.key].favorGain * qty;
@@ -1190,6 +1253,7 @@ function confirmGive(){
 function openShop(){ renderShop(); openModal("shopModal"); }
 function renderShop(){
   const el = document.getElementById("shopGrid");
+  if(!el) return;
   let html = "";
   Object.keys(ITEM_DEFS).forEach(k => {
     const def = ITEM_DEFS[k];
@@ -1213,6 +1277,7 @@ function buyItem(itemKey, tier){
   const price = SHOP_TIERS[tier].price;
   if(state.points < price){ alert("积分不足！需要 " + price + " 积分"); return; }
   state.points -= price;
+  if(!state.items) state.items = {};
   state.items[itemKey] = (state.items[itemKey] || 0) + 1;
   renderTop(); save();
   addLog(`商店购买：${ITEM_DEFS[itemKey].name}(${tier}级) → 花费${price}`);
@@ -1230,8 +1295,11 @@ const JOBS = [
 ];
 function openJob(){ renderJob(); openModal("jobModal"); }
 function renderJob(){
-  document.getElementById("jobStamina").textContent = state.stamina;
-  document.getElementById("jobList").innerHTML = JOBS.map(j => `
+  const s = document.getElementById("jobStamina");
+  if(s) s.textContent = state.stamina;
+  const el = document.getElementById("jobList");
+  if(!el) return;
+  el.innerHTML = JOBS.map(j => `
     <div class="job-card" onclick="doJob('${j.key}')">
       <div>
         <div class="jname">${j.name}</div>
@@ -1264,17 +1332,20 @@ function nextDay(){
 }
 
 /* ============================================================
-   通用结果弹窗
+   结果弹窗
    ============================================================ */
 function showResult(title, areaHtml, textHtml){
-  document.getElementById("resultModalTitle").textContent = title;
-  document.getElementById("resultModalArea").innerHTML = areaHtml;
-  document.getElementById("resultModalText").innerHTML = textHtml;
+  const t = document.getElementById("resultModalTitle");
+  const a = document.getElementById("resultModalArea");
+  const x = document.getElementById("resultModalText");
+  if(t) t.textContent = title;
+  if(a) a.innerHTML = areaHtml;
+  if(x) x.innerHTML = textHtml;
   openModal("resultModal");
 }
 
 /* ============================================================
-   抽取（从华夏池）
+   抽取
    ============================================================ */
 let currentDrawBoard = "force";
 function openDraw(){
@@ -1285,6 +1356,7 @@ function openDraw(){
 }
 function renderDrawTabs(){
   const t = document.getElementById("drawTabs");
+  if(!t) return;
   t.innerHTML = "";
   BOARDS.forEach(b => {
     const btn = document.createElement("button");
@@ -1296,6 +1368,8 @@ function renderDrawTabs(){
 }
 function renderDrawPanel(){
   const b = BOARDS.find(x => x.key === currentDrawBoard);
+  const el = document.getElementById("drawPanel");
+  if(!el) return;
   let html = `<p class="hint">${b.title} · ${b.type} · ${b.label}<br>抽取华夏名臣，重复转化为信物</p><div class="draw-grid">`;
   Object.keys(TIERS).forEach(t => {
     const tier = TIERS[t];
@@ -1306,13 +1380,14 @@ function renderDrawPanel(){
     </div>`;
   });
   html += `</div>`;
-  document.getElementById("drawPanel").innerHTML = html;
+  el.innerHTML = html;
 }
 function draw(boardKey, tierKey){
   const tier = TIERS[tierKey];
   if(state.points < tier.price){ alert("积分不足！当前积分：" + state.points); return; }
   const b = BOARDS.find(x => x.key === boardKey);
   const row = pickFromData(DATA_HX, boardKey, tier.range[0], tier.range[1]);
+  if(!row){ alert("抽取失败：数据缺失"); return; }
   state.points -= tier.price;
 
   let areaHtml = "";
@@ -1325,7 +1400,8 @@ function draw(boardKey, tierKey){
     </div>`;
     addLog(`抽取重复：${row[3]} → 获得信物×1`);
   } else {
-    state.owned.push(buildOwnedItem(boardKey, row));
+    const item = buildOwnedItem(boardKey, row);
+    if(item) state.owned.push(item);
     areaHtml = `<div class="result-card" style="flex:1">
       <div class="r">获得（${tierKey}）</div>
       <div class="n">${row[1]}_${row[2]}_${row[3]}</div>
@@ -1343,13 +1419,19 @@ function draw(boardKey, tierKey){
    ============================================================ */
 let currentRankBoard = "force";
 function openRanking(){
-  currentRankBoard = "force";
-  renderRankTabs();
-  renderRankPanel();
-  openModal("rankingModal");
+  try{
+    currentRankBoard = "force";
+    renderRankTabs();
+    renderRankPanel();
+    openModal("rankingModal");
+  }catch(e){
+    console.error(e);
+    alert("榜单打开失败：" + e.message);
+  }
 }
 function renderRankTabs(){
   const t = document.getElementById("rankTabs");
+  if(!t) return;
   t.innerHTML = "";
   BOARDS.forEach(b => {
     const btn = document.createElement("button");
@@ -1360,9 +1442,13 @@ function renderRankTabs(){
   });
 }
 function renderRankPanel(){
+  const el = document.getElementById("rankPanel");
+  if(!el) return;
   const b = BOARDS.find(x => x.key === currentRankBoard);
+  if(!b){ el.innerHTML = "榜单不存在"; return; }
+  const rows = (DATA_HX && DATA_HX[b.key]) || [];
   let html = `<table><thead><tr><th>排名</th><th>朝代_皇帝_人名</th><th>${b.label}</th></tr></thead><tbody>`;
-  (DATA_HX[b.key] || []).forEach(row => {
+  rows.forEach(row => {
     const owned = isOwned(b.key, row[0]);
     html += `<tr class="${owned ? 'owned' : ''}">
       <td class="rank">${row[0]}</td>
@@ -1371,7 +1457,7 @@ function renderRankPanel(){
     </tr>`;
   });
   html += `</tbody></table>`;
-  document.getElementById("rankPanel").innerHTML = html;
+  el.innerHTML = html;
 }
 
 /* ============================================================
@@ -1380,7 +1466,8 @@ function renderRankPanel(){
 function openMyCollection(){ renderCollection(); openModal("collectionModal"); }
 function renderCollection(){
   const el = document.getElementById("collectionPanel");
-  if(!state.owned || state.owned.length === 0){
+  if(!el) return;
+  if(!Array.isArray(state.owned) || state.owned.length === 0){
     el.innerHTML = `<div class="collect-empty">暂无收藏，去抽取或领新手礼包吧！</div>`;
     return;
   }
@@ -1415,18 +1502,22 @@ function openDetail(idx){
   if(!item) return;
   currentDetailItem = item;
   const s = getItemStats(item);
-  document.getElementById("detailTitle").textContent = `${item.dynasty}_${item.emperor}_${item.name}`;
-  document.getElementById("detailPanel").innerHTML = `
-    <div class="detail-row"><span class="dl">所属榜单</span><span class="dv">${item.label} · 第${item.rank}名</span></div>
-    <div class="detail-row"><span class="dl">基础数值</span><span class="dv">${item.value}</span></div>
-    <div class="detail-row"><span class="dl">❤️ 好感度</span><span class="dv">${item.favor||0} / 100</span></div>
-    <div class="detail-row"><span class="dl">⚔️ 有效数值</span><span class="dv">${s.effValue}（+${s.favorBonus}）</span></div>
-    <div class="detail-row"><span class="dl">❤️ 血量</span><span class="dv">${s.hp}</span></div>
-    <div class="detail-row"><span class="dl">⚔️ 攻击</span><span class="dv">${s.atk}</span></div>
-    <div class="detail-row"><span class="dl">🛡️ 防御</span><span class="dv">${s.def}</span></div>
-    <div class="detail-row"><span class="dl">💥 暴击率</span><span class="dv">${s.critRate}% / 100%</span></div>
-    <div class="detail-row"><span class="dl">🔥 暴击伤害</span><span class="dv">${s.critDmg}% / 500%</span></div>
-  `;
+  const t = document.getElementById("detailTitle");
+  const p = document.getElementById("detailPanel");
+  if(t) t.textContent = `${item.dynasty}_${item.emperor}_${item.name}`;
+  if(p){
+    p.innerHTML = `
+      <div class="detail-row"><span class="dl">所属榜单</span><span class="dv">${item.label} · 第${item.rank}名</span></div>
+      <div class="detail-row"><span class="dl">基础数值</span><span class="dv">${item.value}</span></div>
+      <div class="detail-row"><span class="dl">❤️ 好感度</span><span class="dv">${item.favor||0} / 100</span></div>
+      <div class="detail-row"><span class="dl">⚔️ 有效数值</span><span class="dv">${s.effValue}（+${s.favorBonus}）</span></div>
+      <div class="detail-row"><span class="dl">❤️ 血量</span><span class="dv">${s.hp}</span></div>
+      <div class="detail-row"><span class="dl">⚔️ 攻击</span><span class="dv">${s.atk}</span></div>
+      <div class="detail-row"><span class="dl">🛡️ 防御</span><span class="dv">${s.def}</span></div>
+      <div class="detail-row"><span class="dl">💥 暴击率</span><span class="dv">${s.critRate}% / 100%</span></div>
+      <div class="detail-row"><span class="dl">🔥 暴击伤害</span><span class="dv">${s.critDmg}% / 500%</span></div>
+    `;
+  }
   openModal("detailModal");
 }
 
@@ -1438,34 +1529,42 @@ function openGift(){
   openModal("giftModal");
 }
 function claimGift(){
-  if(state.giftClaimed) return;
-  const wuBoards = ["force","command","overall"];
-  const mouBoards = ["intel","logistics","advOverall"];
-  const wb = wuBoards[Math.floor(Math.random()*wuBoards.length)];
-  const mb = mouBoards[Math.floor(Math.random()*mouBoards.length)];
-  const wu = pickFromData(DATA_HX, wb, 1, 40);
-  const mou = pickFromData(DATA_HX, mb, 1, 40);
+  try{
+    if(state.giftClaimed) return;
+    const wuBoards = ["force","command","overall"];
+    const mouBoards = ["intel","logistics","advOverall"];
+    const wb = wuBoards[Math.floor(Math.random()*wuBoards.length)];
+    const mb = mouBoards[Math.floor(Math.random()*mouBoards.length)];
+    const wu = pickFromData(DATA_HX, wb, 1, 40);
+    const mou = pickFromData(DATA_HX, mb, 1, 40);
+    if(!wu || !mou){ alert("新手礼包数据缺失，请补全华夏数据后重试"); return; }
 
-  let wuText = "", mouText = "";
-  if(isOwned(wb, wu[0])){
-    addToken(wu[3], wu[1], wu[2]);
-    wuText = `<div class="result-card" style="flex:1"><div class="r">武将(重复)</div><div class="n">${wu[1]}_${wu[2]}_${wu[3]}</div><div class="v">获得信物×1</div></div>`;
-  } else {
-    state.owned.push(buildOwnedItem(wb, wu));
-    wuText = `<div class="result-card" style="flex:1"><div class="r">武将</div><div class="n">${wu[1]}_${wu[2]}_${wu[3]}</div><div class="v">第${wu[0]}名 · 值${wu[4]}</div></div>`;
+    let wuText = "", mouText = "";
+    if(isOwned(wb, wu[0])){
+      addToken(wu[3], wu[1], wu[2]);
+      wuText = `<div class="result-card" style="flex:1"><div class="r">武将(重复)</div><div class="n">${wu[1]}_${wu[2]}_${wu[3]}</div><div class="v">获得信物×1</div></div>`;
+    } else {
+      const item = buildOwnedItem(wb, wu);
+      if(item) state.owned.push(item);
+      wuText = `<div class="result-card" style="flex:1"><div class="r">武将</div><div class="n">${wu[1]}_${wu[2]}_${wu[3]}</div><div class="v">第${wu[0]}名 · 值${wu[4]}</div></div>`;
+    }
+    if(isOwned(mb, mou[0])){
+      addToken(mou[3], mou[1], mou[2]);
+      mouText = `<div class="result-card" style="flex:1"><div class="r">谋士(重复)</div><div class="n">${mou[1]}_${mou[2]}_${mou[3]}</div><div class="v">获得信物×1</div></div>`;
+    } else {
+      const item = buildOwnedItem(mb, mou);
+      if(item) state.owned.push(item);
+      mouText = `<div class="result-card" style="flex:1"><div class="r">谋士</div><div class="n">${mou[1]}_${mou[2]}_${mou[3]}</div><div class="v">第${mou[0]}名 · 值${mou[4]}</div></div>`;
+    }
+    state.giftClaimed = true;
+    renderTop(); save();
+    closeModal("giftModal");
+    showResult("🎁 新手礼包", wuText + mouText, `<span class="win">礼包开启！</span>`);
+    addLog(`新手礼包：武将${wu[3]}，谋士${mou[3]}`);
+  }catch(e){
+    console.error(e);
+    alert("领取礼包出错：" + e.message);
   }
-  if(isOwned(mb, mou[0])){
-    addToken(mou[3], mou[1], mou[2]);
-    mouText = `<div class="result-card" style="flex:1"><div class="r">谋士(重复)</div><div class="n">${mou[1]}_${mou[2]}_${mou[3]}</div><div class="v">获得信物×1</div></div>`;
-  } else {
-    state.owned.push(buildOwnedItem(mb, mou));
-    mouText = `<div class="result-card" style="flex:1"><div class="r">谋士</div><div class="n">${mou[1]}_${mou[2]}_${mou[3]}</div><div class="v">第${mou[0]}名 · 值${mou[4]}</div></div>`;
-  }
-  state.giftClaimed = true;
-  renderTop(); save();
-  closeModal("giftModal");
-  showResult("🎁 新手礼包", wuText + mouText, `<span class="win">礼包开启！</span>`);
-  addLog(`新手礼包：武将${wu[3]}，谋士${mou[3]}`);
 }
 
 /* ============================================================
@@ -1490,13 +1589,16 @@ function openPick(mode, battleMode, diffKey){
     return;
   }
   pickContext = { mode, battleMode, diffKey, wuPick:null, mouPick:null, pool };
-  document.getElementById("pickTitle").textContent = title;
-  document.getElementById("pickHint").textContent = hint;
+  const t = document.getElementById("pickTitle");
+  const h = document.getElementById("pickHint");
+  if(t) t.textContent = title;
+  if(h) h.textContent = hint;
   renderPickList();
   openModal("pickModal");
 }
 function renderPickList(){
   const el = document.getElementById("pickList");
+  if(!el || !pickContext) return;
   const pc = pickContext;
   const wuBoards = ["force","command","overall"];
   let html = "";
@@ -1522,6 +1624,7 @@ function renderPickList(){
   el.innerHTML = html;
 }
 function togglePick(idx){
+  if(!pickContext) return;
   const pc = pickContext;
   const o = pc.pool[idx];
   const wuBoards = ["force","command","overall"];
@@ -1535,6 +1638,7 @@ function togglePick(idx){
   renderPickList();
 }
 function confirmPick(){
+  if(!pickContext) return;
   const pc = pickContext;
   if(pc.mode === "daily"){
     if(!pc.wuPick){ alert("请选择一名出战名臣！"); return; }
@@ -1554,13 +1658,16 @@ let currentBattleMode = "force";
 function openBattle(mode){
   currentBattleMode = mode;
   const cfg = BATTLE_CONFIG[mode];
-  document.getElementById("battleTitle").textContent = cfg.title + " · " + cfg.type;
-  document.getElementById("battleHint").textContent = "选择难度（对手为日本名臣）";
+  const t = document.getElementById("battleTitle");
+  const h = document.getElementById("battleHint");
+  if(t) t.textContent = cfg.title + " · " + cfg.type;
+  if(h) h.textContent = "选择难度（对手为日本名臣）";
   renderDiffGrid();
   openModal("battleModal");
 }
 function renderDiffGrid(){
   const grid = document.getElementById("diffGrid");
+  if(!grid) return;
   let html = "";
   Object.keys(DIFFICULTY).forEach(k => {
     const d = DIFFICULTY[k];
@@ -1592,7 +1699,9 @@ function startBattleWithPick(battleMode, diffKey, myItem){
   renderTop();
 
   const oppRow = pickFromData(DATA_JP, cfg.boardKey, d.range[0], d.range[1]);
+  if(!oppRow){ alert("对手数据缺失"); return; }
   const oppItem = buildOwnedItem(cfg.boardKey, oppRow);
+  if(!oppItem){ alert("对手创建失败"); return; }
 
   startDuel({
     mode:"daily",
@@ -1624,8 +1733,10 @@ function startMainQuestWithPick(myWuItem, myMouItem){
   const mouBoards = ["intel","logistics","advOverall"];
   const oppWuRow = pickAnyFromData(DATA_JP, wuBoards[Math.floor(Math.random()*wuBoards.length)]);
   const oppMouRow = pickAnyFromData(DATA_JP, mouBoards[Math.floor(Math.random()*mouBoards.length)]);
+  if(!oppWuRow || !oppMouRow){ alert("对手数据缺失"); return; }
   const oppWuItem = buildOwnedItem("force", oppWuRow);
   const oppMouItem = buildOwnedItem("intel", oppMouRow);
+  if(!oppWuItem || !oppMouItem){ alert("对手创建失败"); return; }
 
   const myWuEff = myWuItem.value + calcFavorBonus(myWuItem.favor);
   const myMouEff = myMouItem.value + calcFavorBonus(myMouItem.favor);
@@ -1677,42 +1788,52 @@ function startDuel(ctx){
     first, turn: first, round: 0, finished: false, dice
   };
 
-  document.getElementById("duelVsArea").innerHTML = `
-    <div class="vs-side">
-      <div class="result-card">
-        <div class="r">我方 · ${ctx.title}</div>
-        <div class="n">${ctx.player.name}</div>
-        <div class="v">攻${pStats.atk} 防${pStats.def} 暴${pStats.critRate}%/${pStats.critDmg}%</div>
-        <div class="hp-bar"><div class="hp-fill" id="playerHpBar" style="width:100%"></div></div>
-        <div style="font-size:11px;color:#888">HP <span id="playerHpText">${pStats.hp}</span>/${pStats.hp}</div>
+  const vsArea = document.getElementById("duelVsArea");
+  if(vsArea){
+    vsArea.innerHTML = `
+      <div class="vs-side">
+        <div class="result-card">
+          <div class="r">我方 · ${ctx.title}</div>
+          <div class="n">${ctx.player.name}</div>
+          <div class="v">攻${pStats.atk} 防${pStats.def} 暴${pStats.critRate}%/${pStats.critDmg}%</div>
+          <div class="hp-bar"><div class="hp-fill" id="playerHpBar" style="width:100%"></div></div>
+          <div style="font-size:11px;color:#888">HP <span id="playerHpText">${pStats.hp}</span>/${pStats.hp}</div>
+        </div>
       </div>
-    </div>
-    <div class="vs-vs">VS</div>
-    <div class="vs-side">
-      <div class="result-card">
-        <div class="r">对手 · 日本 · 第${ctx.opp.rank}名</div>
-        <div class="n">${ctx.opp.name}</div>
-        <div class="v">攻${oStats.atk} 防${oStats.def} 暴${oStats.critRate}%/${oStats.critDmg}%</div>
-        <div class="hp-bar"><div class="hp-fill opp" id="oppHpBar" style="width:100%"></div></div>
-        <div style="font-size:11px;color:#888">HP <span id="oppHpText">${oStats.hp}</span>/${oStats.hp}</div>
+      <div class="vs-vs">VS</div>
+      <div class="vs-side">
+        <div class="result-card">
+          <div class="r">对手 · 日本 · 第${ctx.opp.rank}名</div>
+          <div class="n">${ctx.opp.name}</div>
+          <div class="v">攻${oStats.atk} 防${oStats.def} 暴${oStats.critRate}%/${oStats.critDmg}%</div>
+          <div class="hp-bar"><div class="hp-fill opp" id="oppHpBar" style="width:100%"></div></div>
+          <div style="font-size:11px;color:#888">HP <span id="oppHpText">${oStats.hp}</span>/${oStats.hp}</div>
+        </div>
       </div>
-    </div>
-  `;
+    `;
+  }
   const log = document.getElementById("roundLog");
-  log.innerHTML = "";
-  log.innerHTML += `<div class="rinfo">🎲 投掷骰子：${dice} 点（${dice % 2 === 1 ? "单数" : "双数"}）→ ${first === "player" ? "我方先手" : "对方先手"}</div>`;
-  document.getElementById("duelResultText").innerHTML = "";
-  document.getElementById("duelNextBtn").style.display = "inline-block";
-  document.getElementById("duelNextBtn").textContent = "下一回合";
-  document.getElementById("duelNextBtn").onclick = duelNext;
-  document.getElementById("duelCloseBtn").style.display = "none";
-  log.scrollTop = log.scrollHeight;
+  if(log){
+    log.innerHTML = "";
+    log.innerHTML += `<div class="rinfo">🎲 投掷骰子：${dice} 点（${dice % 2 === 1 ? "单数" : "双数"}）→ ${first === "player" ? "我方先手" : "对方先手"}</div>`;
+    log.scrollTop = log.scrollHeight;
+  }
+  const rt = document.getElementById("duelResultText");
+  if(rt) rt.innerHTML = "";
+  const nBtn = document.getElementById("duelNextBtn");
+  if(nBtn){
+    nBtn.style.display = "inline-block";
+    nBtn.textContent = "下一回合";
+    nBtn.onclick = duelNext;
+  }
+  const cBtn = document.getElementById("duelCloseBtn");
+  if(cBtn) cBtn.style.display = "none";
   openModal("duelModal");
 }
 
 function calcDamage(atk, def, critRate, critDmg){
   let dmg = Math.max(5, Math.round(atk - def * 0.5));
-  let isCrit = Math.random() * 100 < critRate;
+  const isCrit = Math.random() * 100 < critRate;
   if(isCrit) dmg = Math.round(dmg * critDmg / 100);
   return { dmg, isCrit };
 }
@@ -1726,20 +1847,24 @@ function duelNext(){
   if(dc.turn === "player"){
     const r = calcDamage(dc.pStats.atk, dc.oStats.def, dc.pStats.critRate, dc.pStats.critDmg);
     dc.oppHp = Math.max(0, dc.oppHp - r.dmg);
-    const cls = r.isCrit ? "rcrit" : "rwin";
-    const tag = r.isCrit ? "【暴击】" : "";
-    log.innerHTML += `<div class="${cls}">第${dc.round}回合 · 我方${tag}出手：造成 ${r.dmg} 伤害（对方剩余HP ${dc.oppHp}）</div>`;
+    if(log){
+      const cls = r.isCrit ? "rcrit" : "rwin";
+      const tag = r.isCrit ? "【暴击】" : "";
+      log.innerHTML += `<div class="${cls}">第${dc.round}回合 · 我方${tag}出手：造成 ${r.dmg} 伤害（对方剩余HP ${dc.oppHp}）</div>`;
+    }
     dc.turn = "opp";
   } else {
     const r = calcDamage(dc.oStats.atk, dc.pStats.def, dc.oStats.critRate, dc.oStats.critDmg);
     dc.playerHp = Math.max(0, dc.playerHp - r.dmg);
-    const cls = r.isCrit ? "rcrit" : "rlose";
-    const tag = r.isCrit ? "【暴击】" : "";
-    log.innerHTML += `<div class="${cls}">第${dc.round}回合 · 对方${tag}出手：造成 ${r.dmg} 伤害（我方剩余HP ${dc.playerHp}）</div>`;
+    if(log){
+      const cls = r.isCrit ? "rcrit" : "rlose";
+      const tag = r.isCrit ? "【暴击】" : "";
+      log.innerHTML += `<div class="${cls}">第${dc.round}回合 · 对方${tag}出手：造成 ${r.dmg} 伤害（我方剩余HP ${dc.playerHp}）</div>`;
+    }
     dc.turn = "player";
   }
   updateHpBars();
-  log.scrollTop = log.scrollHeight;
+  if(log) log.scrollTop = log.scrollHeight;
 
   if(dc.playerHp <= 0 || dc.oppHp <= 0){
     dc.finished = true;
@@ -1749,16 +1874,22 @@ function duelNext(){
 
 function updateHpBars(){
   const dc = duelContext;
+  if(!dc) return;
   const pPct = (dc.playerHp / dc.playerHpMax) * 100;
   const oPct = (dc.oppHp / dc.oppHpMax) * 100;
-  document.getElementById("playerHpBar").style.width = pPct + "%";
-  document.getElementById("oppHpBar").style.width = oPct + "%";
-  document.getElementById("playerHpText").textContent = dc.playerHp;
-  document.getElementById("oppHpText").textContent = dc.oppHp;
+  const pb = document.getElementById("playerHpBar");
+  const ob = document.getElementById("oppHpBar");
+  const pt = document.getElementById("playerHpText");
+  const ot = document.getElementById("oppHpText");
+  if(pb) pb.style.width = pPct + "%";
+  if(ob) ob.style.width = oPct + "%";
+  if(pt) pt.textContent = dc.playerHp;
+  if(ot) ot.textContent = dc.oppHp;
 }
 
 function finishDuel(){
   const dc = duelContext;
+  if(!dc) return;
   const log = document.getElementById("roundLog");
   const win = dc.oppHp <= 0 && dc.playerHp > 0;
   let gainText = "";
@@ -1789,7 +1920,6 @@ function finishDuel(){
       }
     }
   } else {
-    // 国运之战：华夏/日本国运值变化
     const hxDelta = win ? 30 : -15;
     const jpDelta = win ? -15 : 20;
     state.leaderboard["华夏"] = Math.max(0, state.leaderboard["华夏"] + hxDelta);
@@ -1807,19 +1937,23 @@ function finishDuel(){
     }
   }
 
-  log.innerHTML += `<div class="rinfo">🏆 决斗结束：${win ? "我方获胜" : "我方战败"}</div>`;
-  document.getElementById("duelResultText").innerHTML = gainText;
-  document.getElementById("duelNextBtn").style.display = "none";
-  document.getElementById("duelCloseBtn").style.display = "inline-block";
+  if(log) log.innerHTML += `<div class="rinfo">🏆 决斗结束：${win ? "我方获胜" : "我方战败"}</div>`;
+  const rt = document.getElementById("duelResultText");
+  if(rt) rt.innerHTML = gainText;
+  const nBtn = document.getElementById("duelNextBtn");
+  if(nBtn) nBtn.style.display = "none";
+  const cBtn = document.getElementById("duelCloseBtn");
+  if(cBtn) cBtn.style.display = "inline-block";
   renderTop(); save();
   addLog(`【${dc.title}】${dc.diffName} → 我方${dc.player.name} vs 日本${dc.opp.name} → ${win?"胜":"负"}`);
 }
 
 /* ============================================================
-   排行榜（华夏 + 日本）
+   排行榜
    ============================================================ */
 function openLeaderboard(){
   const el = document.getElementById("leaderboardPanel");
+  if(!el) return;
   const sorted = Object.entries(state.leaderboard).sort((a,b) => b[1] - a[1]);
   let html = "";
   sorted.forEach(([name, score], i) => {
@@ -1868,12 +2002,13 @@ function clearLog(){ state.log = []; save(); renderAdminLog(); }
 function renderAdminLog(){
   const el = document.getElementById("adminLog");
   if(!el) return;
+  if(!Array.isArray(state.log)){ el.innerHTML = ""; return; }
   el.innerHTML = state.log.map(x => `<div>${x}</div>`).join("");
 }
 function renderOwned(){
   const el = document.getElementById("ownedList");
   if(!el) return;
-  if(state.owned.length === 0){ el.innerHTML = `<div style="color:#666">暂无收藏</div>`; return; }
+  if(!Array.isArray(state.owned) || state.owned.length === 0){ el.innerHTML = `<div style="color:#666">暂无收藏</div>`; return; }
   el.innerHTML = state.owned.map(o => `<div>${o.dynasty}_${o.emperor}_${o.name} · ${o.label}${o.value} · 第${o.rank}名 · 好感${o.favor||0}</div>`).join("");
 }
 function adminAddCharacter(){
@@ -1888,7 +2023,8 @@ function adminAddCharacter(){
     addLog(`管理员添加重复：${row[3]} → 信物×1`);
     alert("已拥有该名臣，获得信物×1！");
   } else {
-    state.owned.push(buildOwnedItem(boardKey, row));
+    const item = buildOwnedItem(boardKey, row);
+    if(item) state.owned.push(item);
     addLog(`管理员添加：${row[3]}（第${row[0]}名）`);
     alert("已添加到收藏！");
   }
@@ -1898,6 +2034,7 @@ function adminAddItem(){
   const type = document.getElementById("adminItemType").value;
   const qty = parseInt(document.getElementById("adminItemQty").value);
   if(!qty || qty <= 0){ alert("数量需大于0"); return; }
+  if(!state.items) state.items = {};
   state.items[type] = (state.items[type] || 0) + qty;
   save();
   addLog(`管理员添加道具：${ITEM_DEFS[type].name} ×${qty}`);
@@ -1908,6 +2045,7 @@ function adminAddToken(){
   const qty = parseInt(document.getElementById("adminTokenQty").value);
   if(!name){ alert("请输入人名"); return; }
   if(!qty || qty <= 0){ alert("数量需大于0"); return; }
+  if(!Array.isArray(state.tokens)) state.tokens = [];
   let t = state.tokens.find(x => x.name === name);
   if(t){ t.count += qty; }
   else { state.tokens.push({ name, dynasty:"?", emperor:"?", count:qty }); }
@@ -1925,14 +2063,25 @@ function resetGame(){
   location.reload();
 }
 
-load();
-if(state.introSeen){
-  document.getElementById("introOverlay").style.display = "none";
-  document.getElementById("gameRoot").style.display = "block";
-  renderTop();
-} else {
-  document.getElementById("introOverlay").style.display = "flex";
-  document.getElementById("gameRoot").style.display = "none";
+/* 启动 */
+try{
+  load();
+  if(state.introSeen){
+    const ov = document.getElementById("introOverlay");
+    const gr = document.getElementById("gameRoot");
+    if(ov) ov.style.display = "none";
+    if(gr) gr.style.display = "block";
+    renderTop();
+  } else {
+    const ov = document.getElementById("introOverlay");
+    const gr = document.getElementById("gameRoot");
+    if(ov) ov.style.display = "flex";
+    if(gr) gr.style.display = "none";
+  }
+  console.log("国运擂台启动成功，存档版本:", state._v);
+}catch(e){
+  console.error("启动失败：", e);
+  alert("游戏启动失败：" + e.message + "\n请尝试清除浏览器缓存或点重置。");
 }
 </script>
 </body>
