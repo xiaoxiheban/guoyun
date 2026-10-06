@@ -576,15 +576,14 @@ const DIFFICULTY = {
   hell:   { name:"地狱", range:[1,25],   fee:100, mult:4.0 }
 };
 
-// 信物加成规则
-const TOKEN_CRIT_RATE = 5;    // 每个信物 +5% 暴击率
-const TOKEN_CRIT_DMG  = 20;   // 每个信物 +20% 暴击伤害
+const TOKEN_CRIT_RATE = 5;
+const TOKEN_CRIT_DMG  = 20;
 
 let state = {
   points: 100,
   giftClaimed: false,
-  owned: [],        // { boardKey, rank, dynasty, emperor, name, value, label, type, critRate, critDmg }
-  tokens: [],       // { name, dynasty, emperor, count }  信物背包
+  owned: [],
+  tokens: [],
   admin: false,
   log: [],
   leaderboard: {
@@ -646,23 +645,18 @@ function renderTop(){
 /* ============================================================
    属性计算
    ============================================================ */
-// 基础血量：排名越靠前越高。第1名 = 1000，第100名 = 100
 function calcBaseHp(rank){
   return Math.round(100 + (100 - rank) * 9.09);
 }
-// 基础攻击：武力值 × 3
 function calcBaseAtk(value){
   return Math.round(value * 3);
 }
-// 基础防御：武力值 × 1.5
 function calcBaseDef(value){
   return Math.round(value * 1.5);
 }
-// 基础暴击率：武力值 × 0.5%（上限100%）
 function calcBaseCritRate(value){
   return Math.min(100, Math.round(value * 0.5 * 10) / 10);
 }
-// 基础暴击伤害：100% + 武力值 × 2%（上限500%）
 function calcBaseCritDmg(value){
   return Math.min(500, Math.round((100 + value * 2) * 10) / 10);
 }
@@ -687,7 +681,7 @@ function getItemStats(item){
 }
 
 /* ============================================================
-   信物背包管理
+   信物背包
    ============================================================ */
 function addToken(name, dynasty, emperor){
   let t = state.tokens.find(x => x.name === name);
@@ -756,7 +750,6 @@ function draw(boardKey, price){
 
   let areaHtml = "";
   if(isOwned(boardKey, row[0])){
-    // 重复 → 信物
     addToken(row[3], row[1], row[2]);
     areaHtml = `<div class="result-card" style="flex:1">
       <div class="r">重复名臣</div>
@@ -816,7 +809,7 @@ function renderRankPanel(){
 }
 
 /* ============================================================
-   我的名臣（点击查看详情）
+   我的名臣
    ============================================================ */
 function openMyCollection(){
   renderCollection();
@@ -825,7 +818,6 @@ function openMyCollection(){
 function renderCollection(){
   const el = document.getElementById("collectionPanel");
   let html = "";
-  // 信物背包
   if(state.tokens.length > 0){
     html += `<div class="collect-group">
       <div class="gt">🎁 信物背包</div>
@@ -916,9 +908,7 @@ function confirmGiveToken(){
   const type = document.getElementById("tokenBonusType").value;
   const item = currentDetailItem;
 
-  // 上限检查
   if(type === "critRate" && item.critRate >= 100){
-    // 暴击率已满 → 转积分
     state.points += 10;
     removeToken(token.name);
     addLog(`【${item.name}】暴击率已满，信物转化为10积分`);
@@ -937,7 +927,6 @@ function confirmGiveToken(){
     return;
   }
 
-  // 加成
   if(type === "critRate"){
     item.critRate = Math.min(100, item.critRate + TOKEN_CRIT_RATE);
   } else {
@@ -953,7 +942,6 @@ function confirmGiveToken(){
      <div class="v">暴击率：${s.critRate}% / 100%</div>
      <div class="v">暴击伤害：${s.critDmg}% / 500%</div></div>`,
     `<span class="win">赠送成功！</span>`);
-  // 重新渲染详情
   const idx = state.owned.indexOf(item);
   if(idx >= 0) openDetail(idx);
 }
@@ -1091,10 +1079,11 @@ function renderDiffGrid(){
   let html = "";
   Object.keys(DIFFICULTY).forEach(k => {
     const d = DIFFICULTY[k];
+    const winReward = Math.floor(d.fee * d.mult);
     html += `<div class="diff-card" onclick="chooseDiff('${k}')">
       <div class="dname">${d.name}</div>
       <div class="dinfo">对手：${d.range[0]}-${d.range[1]}名</div>
-      <div class="dfee">入场费 ${d.fee} · 奖励 ${d.mult}倍</div>
+      <div class="dfee">入场 ${d.fee} · 胜返 ${d.fee}+${winReward}</div>
     </div>`;
   });
   grid.innerHTML = html;
@@ -1133,7 +1122,7 @@ function startBattleWithPick(battleMode, diffKey, myItem){
 }
 
 /* ============================================================
-   主线国运之战（不花积分，影响排行榜）
+   主线国运之战
    ============================================================ */
 function openMainQuest(){
   const wuBoards = ["force","command","overall"];
@@ -1154,7 +1143,6 @@ function startMainQuestWithPick(myWuItem, myMouItem){
   const oppWuItem = buildOwnedItem("force", oppWu);
   const oppMouItem = buildOwnedItem("intel", oppMou);
 
-  // 用武将作为主体参与决斗，谋士加成综合
   const playerCombined = {
     ...myWuItem,
     name: myWuItem.name + " + " + myMouItem.name,
@@ -1288,14 +1276,15 @@ function finishDuel(){
 
   if(dc.mode === "daily"){
     if(win){
-      const back = Math.floor(dc.fee * dc.mult);
-      state.points += back;
-      gainText = `<span class="win">胜利！获得 ${back} 积分（净赚 ${back - dc.fee}）</span>`;
+      // 先返还参赛费，再额外奖励 fee × mult
+      const extra = Math.floor(dc.fee * dc.mult);
+      const total = dc.fee + extra;
+      state.points += total;
+      gainText = `<span class="win">胜利！返还参赛费 ${dc.fee} + 额外奖励 ${extra} = 获得 ${total} 积分（净赚 ${extra}）</span>`;
     } else {
-      gainText = `<span class="lose">败北！损失 ${dc.fee} 积分</span>`;
+      gainText = `<span class="lose">败北！参赛费 ${dc.fee} 不返还</span>`;
     }
   } else {
-    // 国运之战：不花积分，改排行榜积分
     const delta = win ? 30 : -15;
     state.leaderboard["华夏"] += delta;
     state.leaderboard["？？？"] += win ? -15 : 20;
