@@ -80,7 +80,7 @@ tr.owned .name{color:#2ecc71}
 .hp-bar{background:#1a1a2e;border:1px solid #0f3460;border-radius:4px;height:14px;overflow:hidden;margin:6px 0}
 .hp-fill{height:100%;background:linear-gradient(90deg,#2ecc71,#27ae60);transition:width .3s}
 .hp-fill.opp{background:linear-gradient(90deg,#e74c3c,#c0392b)}
-.round-log{background:#1a1a2e;border:1px solid #0f3460;border-radius:6px;padding:10px;height:200px;overflow-y:auto;font-size:12px;line-height:1.7;margin:10px 0}
+.round-log{background:#1a1a2e;border:1px solid #0f3460;border-radius:6px;padding:10px;height:220px;overflow-y:auto;font-size:12px;line-height:1.7;margin:10px 0}
 .round-log div{padding:2px 0;border-bottom:1px solid #1f2b4a}
 .round-log .rwin{color:#2ecc71}
 .round-log .rlose{color:#e74c3c}
@@ -140,6 +140,9 @@ tr.owned .name{color:#2ecc71}
 .admin-section h4{color:#f0c040;margin-bottom:8px}
 .adj-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
 .adj-row button{padding:8px;font-size:12px}
+.guess-btn{background:#1f2b4a;border:2px solid #0f3460;color:#f0c040;font-size:24px;font-weight:bold;padding:20px;border-radius:10px;cursor:pointer;transition:.2s;flex:1}
+.guess-btn:hover{background:#2a3a5e;border-color:#f0c040;transform:scale(1.05)}
+.guess-area{display:flex;gap:14px;padding:14px 0}
 </style>
 </head>
 <body>
@@ -168,6 +171,8 @@ tr.owned .name{color:#2ecc71}
   </div>
   <div>
     <button class="btn gold" onclick="openGift()">新手礼包</button>
+    <button class="btn green" onclick="saveSlot()">📥 存档</button>
+    <button class="btn green" onclick="loadSlot()">📤 读档</button>
     <button class="btn" onclick="openAdmin()">管理员</button>
     <button class="btn red" onclick="resetGame()">重置</button>
   </div>
@@ -236,7 +241,6 @@ tr.owned .name{color:#2ecc71}
     <button class="btn small" onclick="closeModal('adminPanelModal')">关闭</button>
   </div>
 
-  <!-- ★ 国运值调整 ★ -->
   <div class="admin-section">
     <h4>🌏 国运值调整</h4>
     <div id="adminNationList"></div>
@@ -371,8 +375,7 @@ tr.owned .name{color:#2ecc71}
   <div class="round-log" id="roundLog"></div>
   <div class="battle-result-text" id="duelResultText"></div>
   <div class="row" style="margin-top:14px">
-    <button class="btn gold" id="duelNextBtn" onclick="duelNext()">下一回合</button>
-    <button class="btn" id="duelCloseBtn" onclick="closeModal('duelModal')" style="display:none">关闭</button>
+    <button class="btn gold" id="duelCloseBtn" onclick="closeModal('duelModal')" style="display:none">关闭</button>
   </div>
 </div></div>
 
@@ -396,6 +399,7 @@ tr.owned .name{color:#2ecc71}
 <script>
 /* ============================================================
    数据区：华夏百人（占位示例，请粘贴完整数据）
+   格式：[排名, 朝代, 皇帝, 人名, 数值]
    ============================================================ */
 var DATA_HX = {
 force: [
@@ -616,9 +620,7 @@ advOverall: [
 ]
 };
 
-/* ============================================================
-   数据区：樱花百人（占位示例，请粘贴完整数据）
-   ============================================================ */
+/* 樱花百人（占位示例，请粘贴完整数据） */
 var DATA_JP = {
 force: [
 [1,"战国","上杉家","上杉谦信",100],[2,"战国","岛津家","岛津义弘",99],[3,"战国","真田家","真田信繁",98],
@@ -890,8 +892,7 @@ function getCharTier(rank){
   return "B";
 }
 function canUseItem(itemTier, charRank){
-  var charTier = getCharTier(charRank);
-  return TIER_ORDER[itemTier] <= TIER_ORDER[charTier];
+  return TIER_ORDER[itemTier] <= TIER_ORDER[getCharTier(charRank)];
 }
 
 var JOBS = [
@@ -900,7 +901,7 @@ var JOBS = [
   { key:"council",    name:"参加议会", cost:5, reward:50 }
 ];
 
-var SAVE_VERSION = 10;
+var SAVE_VERSION = 11;
 
 function defaultItems(){
   return {
@@ -930,6 +931,7 @@ var invTab = "token";
 var currentDrawBoard = "force";
 var currentRankBoard = "force";
 var currentBattleMode = "force";
+var autoBattleTimer = null;
 
 function save(){
   state._v = SAVE_VERSION;
@@ -945,6 +947,9 @@ function load(){
     state = defaultState();
     return;
   }
+  mergeState(p);
+}
+function mergeState(p){
   if(typeof p.points === "number") state.points = p.points;
   if(typeof p.stamina === "number") state.stamina = p.stamina;
   if(typeof p.day === "number") state.day = p.day;
@@ -983,6 +988,30 @@ function renderTop(){
   document.getElementById("points").textContent = state.points;
   document.getElementById("stamina").textContent = state.stamina;
   document.getElementById("day").textContent = state.day;
+}
+
+/* ★ 存档 / 读档 ★ */
+function saveSlot(){
+  try{
+    state._v = SAVE_VERSION;
+    localStorage.setItem("guoyun_save_slot", JSON.stringify(state));
+    alert("📥 存档成功！\n天数：第 " + state.day + " 天\n积分：" + state.points + "\n华夏国运：" + state.leaderboard["华夏"] + "\n樱花国运：" + state.leaderboard["樱花"]);
+  }catch(e){ alert("存档失败：" + e.message); }
+}
+function loadSlot(){
+  var s = localStorage.getItem("guoyun_save_slot");
+  if(!s){ alert("📤 暂无存档记录！"); return; }
+  var p = null;
+  try{ p = JSON.parse(s); }catch(e){ alert("存档损坏"); return; }
+  if(!p || p._v !== SAVE_VERSION){ alert("存档版本不兼容！"); return; }
+  if(!confirm("确定读取存档？\n\n存档信息：\n天数：第 " + p.day + " 天\n积分：" + p.points + "\n华夏国运：" + p.leaderboard["华夏"] + "\n\n当前进度将被覆盖。")) return;
+  state = defaultState();
+  mergeState(p);
+  renderTop(); save();
+  alert("📤 读档成功！");
+  if(state.leaderboard["华夏"] < 0){
+    setTimeout(function(){ openModal("gameOverModal"); }, 300);
+  }
 }
 
 function pickFromData(dataRef, boardKey, minRank, maxRank){
@@ -1034,12 +1063,10 @@ function closeIntro(){
   renderTop();
 }
 
-/* ============================================================
-   国运清零检测
-   ============================================================ */
 function checkGameOver(){
   if(state.leaderboard["华夏"] < 0){
     save();
+    if(autoBattleTimer){ clearTimeout(autoBattleTimer); autoBattleTimer = null; }
     closeModal("duelModal");
     closeModal("leaderboardModal");
     closeModal("resultModal");
@@ -1051,6 +1078,7 @@ function checkGameOver(){
 }
 function restartGame(){
   localStorage.removeItem("guoyun_save");
+  localStorage.removeItem("guoyun_save_slot");
   location.reload();
 }
 function exitGame(){
@@ -1080,8 +1108,8 @@ function removeToken(name, qty){
 function openBackpack(){ invTab = "token"; renderInvTabs(); renderInvPanel(); openModal("backpackModal"); }
 function switchInvTab(t){ invTab = t; renderInvTabs(); renderInvPanel(); }
 function renderInvTabs(){
-  var el = document.getElementById("invTabs");
-  el.innerHTML = '<button class="' + (invTab === "token" ? "active" : "") + '" onclick="switchInvTab(\'token\')">信物</button>' +
+  document.getElementById("invTabs").innerHTML =
+    '<button class="' + (invTab === "token" ? "active" : "") + '" onclick="switchInvTab(\'token\')">信物</button>' +
     '<button class="' + (invTab === "item" ? "active" : "") + '" onclick="switchInvTab(\'item\')">道具</button>';
 }
 function renderInvPanel(){
@@ -1146,8 +1174,7 @@ function openGive(kind, key, tier){
       '<div style="color:#4fc3f7">' + o.value + '</div></div>';
   });
   listHtml += '</div>';
-  var extra = document.getElementById("giveExtra");
-  extra.innerHTML = listHtml + (kind === "token" ?
+  document.getElementById("giveExtra").innerHTML = listHtml + (kind === "token" ?
     '<h4>选择加成方向</h4><select id="giveBonusType">' +
     '<option value="critRate">暴击率 +5%</option>' +
     '<option value="critDmg">暴击伤害 +20%</option></select>' : "");
@@ -1176,12 +1203,8 @@ function confirmGive(){
   if(!gc || gc.targetIdx < 0){ alert("请选择目标名臣"); return; }
   var item = state.owned[gc.targetIdx];
   if(!item) return;
-
   if(gc.kind === "token"){
-    if(item.name !== gc.key){
-      alert("「" + gc.key + "的信物」只能赠送给【" + gc.key + "】本人！");
-      return;
-    }
+    if(item.name !== gc.key){ alert("「" + gc.key + "的信物」只能赠送给【" + gc.key + "】本人！"); return; }
     var bonusType = document.getElementById("giveBonusType").value;
     var tokenInfo = null;
     for(var i=0;i<state.tokens.length;i++){ if(state.tokens[i].name === gc.key) tokenInfo = state.tokens[i]; }
@@ -1207,17 +1230,8 @@ function confirmGive(){
       '<div class="v">暴击伤害：' + item.critDmg + '% / 500%</div></div>',
       '<span class="win">赠送完成！</span>');
   } else {
-    if(!canUseItem(gc.tier, item.rank)){
-      alert("【" + item.name + "】是" + getCharTier(item.rank) + "级角色（第" + item.rank + "名），无法接受" + gc.tier + "级道具！");
-      return;
-    }
-    if(ITEM_DEFS[gc.key].boardKeys.indexOf(item.boardKey) < 0){
-      alert("该道具只能赠送给：" + ITEM_DEFS[gc.key].boardKeys.map(function(b){
-        for(var i=0;i<BOARDS.length;i++){ if(BOARDS[i].key === b) return BOARDS[i].title; }
-        return b;
-      }).join(" / "));
-      return;
-    }
+    if(!canUseItem(gc.tier, item.rank)){ alert("角色等级不足！"); return; }
+    if(ITEM_DEFS[gc.key].boardKeys.indexOf(item.boardKey) < 0){ alert("榜单不匹配"); return; }
     var cnt = (state.items[gc.key] && state.items[gc.key][gc.tier]) || 0;
     if(cnt <= 0){ alert("道具不足"); return; }
     var qty2 = Math.min(gc.qty, cnt);
@@ -1237,7 +1251,6 @@ function confirmGive(){
 
 function openShop(){ renderShop(); openModal("shopModal"); }
 function renderShop(){
-  var el = document.getElementById("shopGrid");
   var html = "";
   Object.keys(ITEM_DEFS).forEach(function(k){
     var def = ITEM_DEFS[k];
@@ -1256,7 +1269,7 @@ function renderShop(){
     });
     html += '</div></div>';
   });
-  el.innerHTML = html;
+  document.getElementById("shopGrid").innerHTML = html;
 }
 function buyItem(itemKey, tier){
   var price = SHOP_TIERS[tier].price;
@@ -1272,7 +1285,6 @@ function buyItem(itemKey, tier){
 function openJob(){ renderJob(); openModal("jobModal"); }
 function renderJob(){
   document.getElementById("jobStamina").textContent = state.stamina;
-  var el = document.getElementById("jobList");
   var html = "";
   JOBS.forEach(function(j){
     html += '<div class="job-card" onclick="doJob(\'' + j.key + '\')">' +
@@ -1280,7 +1292,7 @@ function renderJob(){
       '<div class="jinfo">消耗 ' + j.cost + ' 体力</div></div>' +
       '<div class="jreward">+' + j.reward + '积分</div></div>';
   });
-  el.innerHTML = html;
+  document.getElementById("jobList").innerHTML = html;
 }
 function doJob(key){
   var j = null;
@@ -1502,7 +1514,6 @@ function openPick(mode, battleMode, diffKey){
   openModal("pickModal");
 }
 function renderPickList(){
-  var el = document.getElementById("pickList");
   var pc = pickContext;
   if(!pc) return;
   var wuBoards = ["force","command","overall"];
@@ -1524,7 +1535,7 @@ function renderPickList(){
       '<div style="color:#888;font-size:11px">' + o.label + ' · 第' + o.rank + '名 · ' + typeTag + ' · 好感' + (o.favor || 0) + '</div></div>' +
       '<div style="color:#4fc3f7">' + s.effValue + '</div></div>';
   });
-  el.innerHTML = html;
+  document.getElementById("pickList").innerHTML = html;
 }
 function togglePick(idx){
   if(!pickContext) return;
@@ -1559,7 +1570,6 @@ function openBattle(mode){
   openModal("battleModal");
 }
 function renderDiffGrid(){
-  var grid = document.getElementById("diffGrid");
   var html = "";
   Object.keys(DIFFICULTY).forEach(function(k){
     var d = DIFFICULTY[k];
@@ -1568,7 +1578,7 @@ function renderDiffGrid(){
       '<div class="dinfo">对手：' + d.range[0] + '-' + d.range[1] + '名</div>' +
       '<div class="dfee">入场费 ' + d.fee + ' · 奖励 ' + d.mult + '倍</div></div>';
   });
-  grid.innerHTML = html;
+  document.getElementById("diffGrid").innerHTML = html;
 }
 function chooseDiff(diffKey){
   var cfg = BATTLE_CONFIG[currentBattleMode];
@@ -1639,16 +1649,19 @@ function startMainQuestWithPick(myWuItem, myMouItem){
   });
 }
 
+/* ============================================================
+   回合制决斗（自动进行 + 猜单双）
+   ============================================================ */
 function startDuel(ctx){
   var pStats = getItemStats(ctx.player);
   var oStats = getItemStats(ctx.opp);
-  var dice = Math.floor(Math.random() * 6) + 1;
-  var first = dice % 2 === 1 ? "player" : "opp";
+  if(autoBattleTimer){ clearTimeout(autoBattleTimer); autoBattleTimer = null; }
   duelContext = {
     mode: ctx.mode, title: ctx.title, diffName: ctx.diffName, fee: ctx.fee, mult: ctx.mult,
     player: ctx.player, opp: ctx.opp, _myWu: ctx._myWu, _myMou: ctx._myMou,
     playerHp: pStats.hp, playerHpMax: pStats.hp, oppHp: oStats.hp, oppHpMax: oStats.hp,
-    pStats: pStats, oStats: oStats, first: first, turn: first, round: 0, finished: false, dice: dice
+    pStats: pStats, oStats: oStats,
+    first: null, turn: null, round: 0, finished: false, dice: null, phase: "guess"
   };
   document.getElementById("duelVsArea").innerHTML =
     '<div class="vs-side"><div class="result-card">' +
@@ -1664,24 +1677,57 @@ function startDuel(ctx){
     '<div class="v">攻' + oStats.atk + ' 防' + oStats.def + ' 暴' + oStats.critRate + '%/' + oStats.critDmg + '%</div>' +
     '<div class="hp-bar"><div class="hp-fill opp" id="oppHpBar" style="width:100%"></div></div>' +
     '<div style="font-size:11px;color:#888">HP <span id="oppHpText">' + oStats.hp + '</span>/' + oStats.hp + '</div></div></div>';
+
+  // 显示猜单双 UI
   var log = document.getElementById("roundLog");
-  log.innerHTML = '<div class="rinfo">🎲 投掷骰子：' + dice + ' 点（' + (dice % 2 === 1 ? "单数" : "双数") + '）→ ' + (first === "player" ? "我方先手" : "对方先手") + '</div>';
+  log.innerHTML =
+    '<div class="rinfo" style="text-align:center;padding:14px;font-size:14px;line-height:1.8">' +
+    '🎲 投掷骰子决定先手<br><span style="color:#888;font-size:12px">请猜单数还是双数</span>' +
+    '</div>' +
+    '<div class="guess-area">' +
+    '<button class="guess-btn" onclick="playerGuess(\'odd\')">单</button>' +
+    '<button class="guess-btn" onclick="playerGuess(\'even\')">双</button>' +
+    '</div>';
+
   document.getElementById("duelResultText").innerHTML = "";
-  document.getElementById("duelNextBtn").style.display = "inline-block";
   document.getElementById("duelCloseBtn").style.display = "none";
   openModal("duelModal");
 }
-function calcDamage(atk, def, critRate, critDmg){
-  var dmg = Math.max(5, Math.round(atk - def * 0.5));
-  var isCrit = Math.random() * 100 < critRate;
-  if(isCrit) dmg = Math.round(dmg * critDmg / 100);
-  return { dmg: dmg, isCrit: isCrit };
+
+function playerGuess(guess){
+  if(!duelContext || duelContext.phase !== "guess") return;
+  var dc = duelContext;
+  var dice = Math.floor(Math.random() * 6) + 1;
+  var diceParity = dice % 2 === 1 ? "odd" : "even";
+  var correct = guess === diceParity;
+
+  dc.dice = dice;
+  dc.guessCorrect = correct;
+  dc.first = correct ? "player" : "opp";
+  dc.turn = dc.first;
+  dc.phase = "battle";
+
+  var log = document.getElementById("roundLog");
+  var parityText = diceParity === "odd" ? "单数" : "双数";
+  var guessText = guess === "odd" ? "单" : "双";
+  var resultLine = correct
+    ? '<span style="color:#2ecc71;font-weight:bold">✅ 猜中！我方先手</span>'
+    : '<span style="color:#e74c3c;font-weight:bold">❌ 猜错！对方先手</span>';
+
+  log.innerHTML =
+    '<div class="rinfo">🎲 骰子结果：<span style="color:#fff;font-size:16px;font-weight:bold">' + dice + '</span> 点（' + parityText + '）</div>' +
+    '<div class="rinfo">你猜：' + guessText + ' → ' + resultLine + '</div>' +
+    '<div class="rinfo" style="color:#4fc3f7">⚔️ 战斗即将自动开始...</div>';
+
+  setTimeout(autoBattle, 1200);
 }
-function duelNext(){
-  if(!duelContext || duelContext.finished) return;
+
+function autoBattle(){
+  if(!duelContext || duelContext.finished || duelContext.phase !== "battle") return;
   var dc = duelContext;
   dc.round++;
   var log = document.getElementById("roundLog");
+
   if(dc.turn === "player"){
     var r = calcDamage(dc.pStats.atk, dc.oStats.def, dc.pStats.critRate, dc.pStats.critDmg);
     dc.oppHp = Math.max(0, dc.oppHp - r.dmg);
@@ -1695,7 +1741,13 @@ function duelNext(){
   }
   updateHpBars();
   log.scrollTop = log.scrollHeight;
-  if(dc.playerHp <= 0 || dc.oppHp <= 0){ dc.finished = true; finishDuel(); }
+
+  if(dc.playerHp <= 0 || dc.oppHp <= 0){
+    dc.finished = true;
+    finishDuel();
+  } else {
+    autoBattleTimer = setTimeout(autoBattle, 800);
+  }
 }
 function updateHpBars(){
   var dc = duelContext;
@@ -1705,23 +1757,34 @@ function updateHpBars(){
   document.getElementById("playerHpText").textContent = dc.playerHp;
   document.getElementById("oppHpText").textContent = dc.oppHp;
 }
+function calcDamage(atk, def, critRate, critDmg){
+  var dmg = Math.max(5, Math.round(atk - def * 0.5));
+  var isCrit = Math.random() * 100 < critRate;
+  if(isCrit) dmg = Math.round(dmg * critDmg / 100);
+  return { dmg: dmg, isCrit: isCrit };
+}
 function addFavor(item, gain){
   if(!item || !("favor" in item)) return 0;
   var before = item.favor || 0;
   item.favor = Math.min(100, before + gain);
   return item.favor - before;
 }
+
 function finishDuel(){
+  if(autoBattleTimer){ clearTimeout(autoBattleTimer); autoBattleTimer = null; }
   var dc = duelContext;
   if(!dc) return;
   var log = document.getElementById("roundLog");
   var win = dc.oppHp <= 0 && dc.playerHp > 0;
   var gainText = "";
+
   if(dc.mode === "daily"){
     if(win){
-      var back = Math.floor(dc.fee * dc.mult);
+      // ★ 积分公式：本金 + 本金×倍率
+      var back = dc.fee + Math.floor(dc.fee * dc.mult);
       state.points += back;
-      gainText = '<span class="win">胜利！获得 ' + back + ' 积分（净赚 ' + (back - dc.fee) + '）</span>';
+      var net = back - dc.fee;
+      gainText = '<span class="win">胜利！返还 ' + back + ' 积分（本金' + dc.fee + ' + 奖励' + net + '）</span>';
       var ownedRef = state.owned.indexOf(dc.player) >= 0 ? dc.player : null;
       if(ownedRef){
         var delta = addFavor(ownedRef, 2);
@@ -1746,7 +1809,6 @@ function finishDuel(){
   }
   log.innerHTML += '<div class="rinfo">🏆 决斗结束：' + (win ? "我方获胜" : "我方战败") + '</div>';
   document.getElementById("duelResultText").innerHTML = gainText;
-  document.getElementById("duelNextBtn").style.display = "none";
   document.getElementById("duelCloseBtn").style.display = "inline-block";
   renderTop(); save();
   addLog("【" + dc.title + "】" + dc.diffName + " → 我方" + dc.player.name + " vs 樱花" + dc.opp.name + " → " + (win ? "胜" : "负"));
@@ -1805,8 +1867,6 @@ function renderOwned(){
     return "<div>" + o.dynasty + "_" + o.emperor + "_" + o.name + " [" + getCharTier(o.rank) + "] · " + o.label + o.value + " · 第" + o.rank + "名 · 好感" + (o.favor || 0) + "</div>";
   }).join("");
 }
-
-/* ★ 管理员 · 国运值调整 ★ */
 function renderAdminNations(){
   var listEl = document.getElementById("adminNationList");
   var selEl = document.getElementById("adminNationSelect");
@@ -1820,7 +1880,6 @@ function renderAdminNations(){
     opts += '<option value="' + name + '">' + name + '</option>';
   });
   listEl.innerHTML = html;
-  // 尽量保持当前选择
   var prev = selEl.value;
   selEl.innerHTML = opts;
   if(prev && state.leaderboard[prev] !== undefined) selEl.value = prev;
@@ -1831,17 +1890,14 @@ function adminAdjustNation(sign){
   if(!amount || amount <= 0){ alert("请输入正整数"); return; }
   if(state.leaderboard[nation] === undefined){ alert("该国家不存在"); return; }
   state.leaderboard[nation] += sign * amount;
-  save();
-  renderAdminNations();
+  save(); renderAdminNations();
   addLog("管理员调整国运：" + nation + " " + (sign > 0 ? "+" : "-") + amount + " → " + state.leaderboard[nation]);
-  // 如果华夏变负 → 触发
   if(state.leaderboard["华夏"] < 0){ checkGameOver(); }
 }
 function adminAdjustNationQuick(nation, delta){
   if(state.leaderboard[nation] === undefined){ alert("该国家不存在"); return; }
   state.leaderboard[nation] += delta;
-  save();
-  renderAdminNations();
+  save(); renderAdminNations();
   addLog("管理员快捷调整：" + nation + " " + (delta > 0 ? "+" : "") + delta + " → " + state.leaderboard[nation]);
   if(state.leaderboard["华夏"] < 0){ checkGameOver(); }
 }
@@ -1851,12 +1907,10 @@ function adminSetNation(){
   if(isNaN(amount)){ alert("请输入数值（可为负）"); return; }
   if(state.leaderboard[nation] === undefined){ alert("该国家不存在"); return; }
   state.leaderboard[nation] = amount;
-  save();
-  renderAdminNations();
+  save(); renderAdminNations();
   addLog("管理员设置国运：" + nation + " = " + amount);
   if(state.leaderboard["华夏"] < 0){ checkGameOver(); }
 }
-
 function adminAddCharacter(){
   var boardKey = document.getElementById("adminCharBoard").value;
   var rank = parseInt(document.getElementById("adminCharRank").value);
@@ -1882,7 +1936,6 @@ function adminAddItem(){
   var tier = document.getElementById("adminItemTier").value;
   var qty = parseInt(document.getElementById("adminItemQty").value);
   if(!qty || qty <= 0){ alert("数量需大于0"); return; }
-  if(!state.items[type]) state.items[type] = { B:0, A:0, S:0, "S+":0 };
   state.items[type][tier] = (state.items[type][tier] || 0) + qty;
   save();
   addLog("管理员添加道具：" + ITEM_DEFS[type].name + "(" + tier + ") ×" + qty);
@@ -1903,7 +1956,7 @@ function adminAddToken(){
 }
 
 function resetGame(){
-  if(!confirm("确定重置所有数据？")) return;
+  if(!confirm("确定重置所有数据？\n（不影响手动存档）")) return;
   localStorage.removeItem("guoyun_save");
   location.reload();
 }
