@@ -968,6 +968,7 @@ var LOAN_INTEREST_RATE = 0.032 / 3;
 var CREDIT_START = 600;
 var CREDIT_PER_POINT = 10;
 var CREDIT_MAX = 600;
+var CREDIT_RECOVER_PER_DAY = 2;
 var DEFAULT_PENALTY_CREDIT = 1;
 
 var TIER_ORDER = { "B":1, "A":2, "S":3, "S+":4 };
@@ -987,7 +988,7 @@ var JOBS = [
   { key:"council", name:"参加议会", cost:5, reward:50 }
 ];
 
-var SAVE_VERSION = 18;
+var SAVE_VERSION = 19;
 var SLOT_COUNT = 6;
 var AUTO_SLOT_KEY = "guoyun_slot_auto";
 var MANUAL_SLOT_PREFIX = "guoyun_slot_";
@@ -1120,21 +1121,21 @@ function calcLoanInfo(principal, months){
   return { totalReturn: totalActual, monthlyPayment: monthlyPayment, interest: interest };
 }
 
-/* ★ 提前还款：本金 + 已过月数利息（至少1个月）- 已还总额，保底本金 ★ */
+/* ★ 修正：提前还款 = 本金 + 已过月数利息(至少1月) - 已还金额，上限为剩余应还 ★ */
 function calcEarlyRepay(loan){
   var monthlyInterest = Math.max(1, Math.round(loan.principal * LOAN_INTEREST_RATE));
-  // 已过整月数：至少按1个月算（防止借款当天0利息）
   var monthsPassed = Math.max(1, loan.paidMonths);
   var interestDue = monthlyInterest * monthsPassed;
-  var totalDue = loan.principal + interestDue;
-  var cost = Math.max(loan.principal, totalDue - loan.totalPaid);
+  var raw = loan.principal + interestDue - loan.totalPaid;
+  // 上限不能超过剩余应还（提前还款不应该比正常还更贵）
+  var cost = Math.max(0, Math.min(raw, loan.remaining));
   return {
     cost: cost,
     monthlyInterest: monthlyInterest,
     monthsPassed: monthsPassed,
     interestDue: interestDue,
-    totalDue: totalDue,
-    principal: loan.principal
+    principal: loan.principal,
+    raw: raw
   };
 }
 
@@ -1159,8 +1160,7 @@ function processLoansDaily(today){
         if(loan.remaining <= 0){
           loan.completed = true;
           loan.completedAt = formatGameDate();
-          state.credit = Math.min(CREDIT_MAX, state.credit + 50);
-          events.push("✅ 贷款 #" + loan.id + " 还清！信用+50");
+          events.push("✅ 贷款 #" + loan.id + " 还清！");
         } else {
           loan.nextDue = addMonths(loan.nextDue, 1);
           events.push("贷款 #" + loan.id + " 还款 -" + dueAmount);
@@ -1184,6 +1184,13 @@ function processLoansDaily(today){
       state.credit = Math.max(0, state.credit - DEFAULT_PENALTY_CREDIT);
     }
   });
+  // ★ 无债务时信用恢复：每天 +2
+  var hasActiveLoan = state.loans.some(function(l){ return !l.completed; });
+  if(!hasActiveLoan && state.credit < CREDIT_MAX){
+    var recover = Math.min(CREDIT_RECOVER_PER_DAY, CREDIT_MAX - state.credit);
+    state.credit += recover;
+    events.push("💳 无债务，信用恢复 +" + recover);
+  }
   return events;
 }
 
@@ -1297,7 +1304,7 @@ function renderLoanActive(){
     if(loan.overdue) html += '<span style="color:#e74c3c">已逾期 ' + loan.overdueDays + ' 天（每日扣1信用）</span>';
     html += '</div>';
     var early = calcEarlyRepay(loan);
-    html += '<div style="margin-top:6px;color:#2ecc71;font-size:11px">💡 提前还款：需 ' + early.cost + ' 积分（本金' + early.principal + ' + ' + early.monthsPassed + '个月利息' + early.interestDue + ' - 已还' + loan.totalPaid + '）</div>';
+    html += '<div style="margin-top:6px;color:#2ecc71;font-size:11px">💡 提前还款：需 <b>' + early.cost + '</b> 积分（省' + (loan.remaining - early.cost) + '）</div>';
     html += '<div style="display:flex;gap:6px;margin-top:6px">';
     html += '<button class="btn small green" style="flex:1" onclick="earlyRepayLoan(' + idx + ')">提前还款</button>';
     html += '<button class="btn small red" style="flex:1" onclick="settleLoan(' + idx + ')">全额结清</button>';
@@ -1362,21 +1369,20 @@ function earlyRepayLoan(idx){
   if(!loan || loan.completed) return;
   var early = calcEarlyRepay(loan);
   if(state.points < early.cost){
-    alert("积分不足！\n\n提前还款需：" + early.cost + " 积分\n（本金 " + early.principal + " + " + early.monthsPassed + "个月利息 " + early.interestDue + " - 已还 " + loan.totalPaid + "）\n\n当前积分：" + state.points);
+    alert("积分不足！\n\n提前还款需：" + early.cost + " 积分\n当前积分：" + state.points);
     return;
   }
-  if(!confirm("提前还款？\n\n本金：" + early.principal + " 积分\n已过月数：" + early.monthsPassed + " 个月\n应付利息：" + early.interestDue + " 积分\n已还金额：" + loan.totalPaid + " 积分\n————————\n应付总额：" + early.cost + " 积分\n\n还清后信用+50")) return;
+  if(!confirm("提前还款？\n\n本金：" + early.principal + " 积分\n已过月数：" + early.monthsPassed + " 个月\n应付利息：" + early.interestDue + " 积分\n已还金额：" + loan.totalPaid + " 积分\n当前剩余应还：" + loan.remaining + " 积分\n————————\n应付总额：" + early.cost + " 积分\n节省利息：" + (loan.remaining - early.cost) + " 积分")) return;
   state.points -= early.cost;
   loan.totalPaid += early.cost;
   loan.remaining = 0;
   loan.completed = true;
   loan.overdue = false;
   loan.completedAt = formatGameDate();
-  state.credit = Math.min(CREDIT_MAX, state.credit + 50);
   renderTop(); save();
   addLog("🏦 提前还清贷款 #" + loan.id + "，支付 " + early.cost);
   renderLoanPanel();
-  alert("✅ 提前还款成功！\n支付 " + early.cost + " 积分\n信用+50");
+  alert("✅ 提前还款成功！\n支付 " + early.cost + " 积分\n节省利息 " + (loan.remaining - early.cost) + " 积分");
 }
 function settleLoan(idx){
   var loan = state.loans[idx];
@@ -1385,18 +1391,17 @@ function settleLoan(idx){
     alert("积分不足！\n结清需 " + loan.remaining + " 积分\n当前积分：" + state.points);
     return;
   }
-  if(!confirm("全额结清贷款 #" + loan.id + "？\n\n剩余应还：" + loan.remaining + " 积分\n\n还清后信用+50")) return;
+  if(!confirm("全额结清贷款 #" + loan.id + "？\n\n剩余应还：" + loan.remaining + " 积分")) return;
   state.points -= loan.remaining;
   loan.totalPaid += loan.remaining;
   loan.remaining = 0;
   loan.completed = true;
   loan.overdue = false;
   loan.completedAt = formatGameDate();
-  state.credit = Math.min(CREDIT_MAX, state.credit + 50);
   renderTop(); save();
   addLog("🏦 结清贷款 #" + loan.id);
   renderLoanPanel();
-  alert("✅ 已结清！信用+50");
+  alert("✅ 已结清！");
 }
 
 /* ========== 存档 ========== */
