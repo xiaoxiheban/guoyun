@@ -40,7 +40,7 @@ h1{text-align:center;color:#f0c040;letter-spacing:3px;margin-bottom:4px;font-siz
 .bottom-buttons{max-width:900px;margin:18px auto 0;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
 .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.78);justify-content:center;align-items:center;z-index:100;padding:14px}
 .modal.show{display:flex}
-.modal-box{background:#16213e;border:1px solid #0f3460;border-radius:10px;padding:18px;max-width:620px;width:100%;max-height:92vh;overflow-y:auto}
+.modal-box{background:#16213e;border:1px solid #0f3460;border-radius:10px;padding:18px;max-width:640px;width:100%;max-height:92vh;overflow-y:auto}
 .modal-box h3{color:#f0c040;margin-bottom:12px;text-align:center;font-size:17px}
 .modal-box h4{color:#f0c040;font-size:13px;margin:10px 0 6px}
 .modal-box input,.modal-box select{width:100%;padding:9px;margin-bottom:8px;border-radius:6px;border:1px solid #0f3460;background:#1a1a2e;color:#fff;font-size:14px}
@@ -159,6 +159,12 @@ tr.owned .name{color:#2ecc71}
 .slot-buttons{display:flex;gap:6px}
 .slot-buttons button{flex:1}
 .date-display{color:#f0c040;font-weight:bold;font-size:15px}
+.loan-card{background:#1a1a2e;border:2px solid #0f3460;border-radius:8px;padding:10px;margin-bottom:8px}
+.loan-card.overdue{border-color:#e74c3c;background:linear-gradient(135deg,#1a1a2e,#2a0a0a)}
+.loan-card.done{border-color:#27ae60;opacity:.7}
+.loan-title{color:#fff;font-weight:bold;font-size:13px;margin-bottom:4px}
+.loan-info{color:#aaa;font-size:11px;line-height:1.6}
+.loan-info span{color:#4fc3f7}
 </style>
 </head>
 <body>
@@ -212,7 +218,7 @@ tr.owned .name{color:#2ecc71}
 <div class="base-grid">
   <div class="base-card" onclick="openShop()"><h3>🏪 商店</h3><p>购买好感度道具</p></div>
   <div class="base-card" onclick="openJob()"><h3>💼 打工</h3><p>消耗体力赚取积分</p></div>
-  <div class="base-card" onclick="openLoanPanel()"><h3>🏦 神灵贷款</h3><p>提前借积分 · 到期还债</p></div>
+  <div class="base-card" onclick="openLoanPanel()"><h3>🏦 神灵贷款</h3><p>借积分 · 还债 · 信用</p></div>
 </div>
 
 <div class="bottom-buttons">
@@ -240,18 +246,16 @@ tr.owned .name{color:#2ecc71}
   <div class="row"><button class="btn gold" onclick="claimGift()">开启礼包</button></div>
 </div></div>
 
-<!-- 神灵贷款 -->
-<div class="modal" id="loanModal"><div class="modal-box" style="max-width:660px">
+<!-- 贷款主面板 -->
+<div class="modal" id="loanModal"><div class="modal-box" style="max-width:680px">
   <h3>🏦 神灵贷款</h3>
-  <p class="hint">向神灵提前借取积分，到期归还本息。<br>积分≤0 时每日违约，扣信用+罚金。</p>
+  <p class="hint">向神灵提前借取积分，到期归还本息。逾期会扣信用。</p>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
     <div class="nation-row" style="margin:0"><span class="nname">信用分</span><span class="nval" id="loanCreditDisplay">600</span></div>
     <div class="nation-row" style="margin:0"><span class="nname">可贷上限</span><span class="nval" id="loanMaxDisplay">6000</span></div>
   </div>
-  <h4>申请贷款</h4>
-  <div id="loanOptions"></div>
-  <h4 style="margin-top:12px">活跃贷款</h4>
-  <div id="activeLoans"></div>
+  <div class="tabs" id="loanTabs" style="margin-bottom:12px"></div>
+  <div id="loanPanelContent"></div>
   <div class="row" style="margin-top:10px"><button class="btn" onclick="closeModal('loanModal')">关闭</button></div>
 </div></div>
 
@@ -473,7 +477,7 @@ tr.owned .name{color:#2ecc71}
 </div>
 
 <script>
-/* 数据区（占位示例，请粘贴完整数据） */
+/* ========== 数据区（占位示例，请粘贴完整数据） ========== */
 var DATA_HX = {
 force: [
 [1,"楚","西楚霸王","项羽",100],[2,"唐","唐昭宗","李存孝",99],[3,"隋","隋炀帝","史万岁",98],
@@ -959,16 +963,13 @@ var SHOP_TIERS = {
   "S+": { price:200, gain:20 }
 };
 
-/* 神灵贷款配置 */
 var LOAN_AMOUNTS = [50, 500, 5000];
 var LOAN_TERMS = [3, 6, 9, 12];
-/* 总利息 = principal * 0.032 * months / 3 */
-var LOAN_INTEREST_RATE = 0.032 / 3; // 每月利息系数
+var LOAN_INTEREST_RATE = 0.032 / 3;
 var CREDIT_START = 600;
-var CREDIT_PER_POINT = 10; // 1信用 = 10积分
+var CREDIT_PER_POINT = 10;
 var CREDIT_MAX = 600;
-var DEFAULT_PENALTY_POINTS = 5; // 违约每日扣分
-var DEFAULT_PENALTY_CREDIT = 1; // 违约每日扣信用
+var DEFAULT_PENALTY_CREDIT = 1;
 
 var TIER_ORDER = { "B":1, "A":2, "S":3, "S+":4 };
 function getCharTier(rank){
@@ -987,10 +988,11 @@ var JOBS = [
   { key:"council", name:"参加议会", cost:5, reward:50 }
 ];
 
-var SAVE_VERSION = 16;
+var SAVE_VERSION = 17;
 var SLOT_COUNT = 6;
 var AUTO_SLOT_KEY = "guoyun_slot_auto";
 var MANUAL_SLOT_PREFIX = "guoyun_slot_";
+var LOAN_ID = 0;
 
 function defaultItems(){
   return {
@@ -1024,8 +1026,8 @@ var currentDrawBoard = "force";
 var currentRankBoard = "force";
 var currentBattleMode = "force";
 var autoBattleTimer = null;
-/* 贷款面板中的临时分期选择 */
 var loanTermSelection = { 50: 3, 500: 3, 5000: 3 };
+var loanPanelTab = "apply";
 
 function save(){
   state._v = SAVE_VERSION;
@@ -1088,20 +1090,14 @@ function renderTop(){
   document.getElementById("dateDisplay").textContent = formatGameDate();
 }
 
-/* ============================================================
-   日历系统
-   ============================================================ */
-function isLeapYear(y){
-  return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
-}
+/* ========== 日历 ========== */
+function isLeapYear(y){ return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0); }
 function daysInMonth(y, m){
   var days = [31,28,31,30,31,30,31,31,30,31,30,31];
   if(m === 2 && isLeapYear(y)) return 29;
   return days[m-1];
 }
-function formatGameDate(){
-  return state.dateY + "年" + state.dateM + "月" + state.dateD + "日";
-}
+function formatGameDate(){ return state.dateY + "年" + state.dateM + "月" + state.dateD + "日"; }
 function dateCompare(a, b){
   if(a.y !== b.y) return a.y - b.y;
   if(a.m !== b.m) return a.m - b.m;
@@ -1115,59 +1111,8 @@ function addMonths(date, months){
   if(d > dim) d = dim;
   return { y: y, m: m, d: d };
 }
-function advanceDays(n){
-  var events = [];
-  for(var i=0; i<n; i++){
-    state.dateD++;
-    if(state.dateD > daysInMonth(state.dateY, state.dateM)){
-      state.dateD = 1;
-      state.dateM++;
-      if(state.dateM > 12){
-        state.dateM = 1;
-        state.dateY++;
-      }
-    }
-    // 处理贷款
-    var today = { y: state.dateY, m: state.dateM, d: state.dateD };
-    var hasActive = false;
-    state.loans.forEach(function(loan){
-      if(loan.completed) return;
-      hasActive = true;
-      if(dateCompare(today, loan.nextDue) >= 0){
-        state.points -= loan.monthlyPayment;
-        loan.paidMonths++;
-        events.push("贷款还款 -" + loan.monthlyPayment + " 积分（" + loan.paidMonths + "/" + loan.months + "）");
-        if(loan.paidMonths >= loan.months){
-          loan.completed = true;
-          state.credit = Math.min(CREDIT_MAX, state.credit + 50);
-          events.push("✅ 贷款还清！信用 +50");
-        } else {
-          loan.nextDue = addMonths(loan.nextDue, 1);
-        }
-      }
-    });
-    // 违约判定：积分≤0且还有活跃贷款
-    if(hasActive && state.points <= 0){
-      state.credit = Math.max(0, state.credit - DEFAULT_PENALTY_CREDIT);
-      state.points -= DEFAULT_PENALTY_POINTS;
-      events.push("⚠️ 违约！-" + DEFAULT_PENALTY_POINTS + "积分，-" + DEFAULT_PENALTY_CREDIT + "信用");
-    }
-  }
-  renderTop();
-  autoSave();
-  save();
-  if(events.length > 0){
-    addLog("推进" + n + "天：" + events.join("；"));
-    // 只弹一次汇总
-    setTimeout(function(){
-      alert("📅 " + formatGameDate() + "\n\n" + events.join("\n"));
-    }, 50);
-  }
-}
 
-/* ============================================================
-   神灵贷款
-   ============================================================ */
+/* ========== 贷款核心 ========== */
 function calcLoanInfo(principal, months){
   var totalReturn = Math.round(principal * (1 + LOAN_INTEREST_RATE * months));
   var monthlyPayment = Math.round(totalReturn / months);
@@ -1176,7 +1121,93 @@ function calcLoanInfo(principal, months){
   return { totalReturn: totalActual, monthlyPayment: monthlyPayment, interest: interest };
 }
 
+/* 计算提前还款金额：剩余部分减免10% */
+function calcEarlyRepay(loan){
+  var discount = Math.floor(loan.remaining * 0.1);
+  return { cost: loan.remaining - discount, discount: discount };
+}
+
+/* 每日处理贷款 */
+function processLoansDaily(today){
+  var events = [];
+  state.loans.forEach(function(loan){
+    if(loan.completed) return;
+    // 还款日检查
+    if(dateCompare(today, loan.nextDue) >= 0){
+      var dueAmount = Math.min(loan.monthlyPayment, loan.remaining);
+      var canPay = Math.min(dueAmount, Math.max(0, state.points));
+      if(canPay >= dueAmount){
+        // 足额还款
+        state.points -= dueAmount;
+        loan.remaining -= dueAmount;
+        loan.totalPaid += dueAmount;
+        loan.paidMonths++;
+        if(loan.overdue){
+          loan.overdue = false;
+          loan.overdueDays = 0;
+          events.push("贷款 #" + loan.id + " 逾期解除");
+        }
+        if(loan.remaining <= 0){
+          loan.completed = true;
+          loan.completedAt = formatGameDate();
+          state.credit = Math.min(CREDIT_MAX, state.credit + 50);
+          events.push("✅ 贷款 #" + loan.id + " 还清！信用+50");
+        } else {
+          loan.nextDue = addMonths(loan.nextDue, 1);
+          events.push("贷款 #" + loan.id + " 还款 -" + dueAmount);
+        }
+      } else {
+        // 积分不足：搜刮干净，标记逾期
+        var payNow = Math.max(0, state.points);
+        if(payNow > 0){
+          state.points -= payNow;
+          loan.remaining -= payNow;
+          loan.totalPaid += payNow;
+          events.push("贷款 #" + loan.id + " 余额不足，搜刮 " + payNow + " 积分");
+        }
+        loan.overdue = true;
+        if(!loan.overdueDays) loan.overdueDays = 0;
+        // 还款日推后一个月（下月再尝试）
+        loan.nextDue = addMonths(loan.nextDue, 1);
+        events.push("⚠️ 贷款 #" + loan.id + " 逾期！");
+      }
+    }
+    // 逾期状态：每天扣1信用
+    if(loan.overdue && !loan.completed){
+      loan.overdueDays = (loan.overdueDays || 0) + 1;
+      state.credit = Math.max(0, state.credit - DEFAULT_PENALTY_CREDIT);
+    }
+  });
+  return events;
+}
+
+function advanceDays(n){
+  var events = [];
+  for(var i=0; i<n; i++){
+    state.dateD++;
+    if(state.dateD > daysInMonth(state.dateY, state.dateM)){
+      state.dateD = 1;
+      state.dateM++;
+      if(state.dateM > 12){ state.dateM = 1; state.dateY++; }
+    }
+    var today = { y: state.dateY, m: state.dateM, d: state.dateD };
+    var dayEvents = processLoansDaily(today);
+    dayEvents.forEach(function(e){ events.push(e); });
+  }
+  renderTop();
+  autoSave();
+  save();
+  if(events.length > 0){
+    addLog("推进" + n + "天：" + events.slice(0,5).join("；") + (events.length > 5 ? "…" : ""));
+    setTimeout(function(){
+      alert("📅 " + formatGameDate() + "\n\n" + events.join("\n"));
+    }, 50);
+  }
+}
+
+/* ========== 贷款面板 ========== */
 function openLoanPanel(){
+  loanPanelTab = "apply";
   renderLoanPanel();
   openModal("loanModal");
 }
@@ -1185,11 +1216,34 @@ function renderLoanPanel(){
   var maxEl = document.getElementById("loanMaxDisplay");
   if(creditEl) creditEl.textContent = state.credit;
   if(maxEl) maxEl.textContent = state.credit * CREDIT_PER_POINT;
-  renderLoanOptions();
-  renderActiveLoans();
+  renderLoanTabs();
+  renderLoanContent();
 }
-function renderLoanOptions(){
-  var el = document.getElementById("loanOptions");
+function renderLoanTabs(){
+  var el = document.getElementById("loanTabs");
+  var tabs = [
+    { key:"apply", name:"📝 申请贷款" },
+    { key:"active", name:"📋 活跃贷款" },
+    { key:"records", name:"📜 贷款记录" }
+  ];
+  var html = "";
+  tabs.forEach(function(t){
+    html += '<button class="' + (loanPanelTab === t.key ? "active" : "") + '" onclick="switchLoanTab(\'' + t.key + '\')">' + t.name + '</button>';
+  });
+  el.innerHTML = html;
+}
+function switchLoanTab(k){
+  loanPanelTab = k;
+  renderLoanTabs();
+  renderLoanContent();
+}
+function renderLoanContent(){
+  var el = document.getElementById("loanPanelContent");
+  if(loanPanelTab === "apply") el.innerHTML = renderLoanApply();
+  else if(loanPanelTab === "active") el.innerHTML = renderLoanActive();
+  else el.innerHTML = renderLoanRecords();
+}
+function renderLoanApply(){
   var html = "";
   LOAN_AMOUNTS.forEach(function(principal){
     var canBorrow = state.credit * CREDIT_PER_POINT >= principal;
@@ -1197,17 +1251,14 @@ function renderLoanOptions(){
     html += '<div style="background:#1a1a2e;border:1px solid ' + borderColor + ';border-radius:8px;padding:10px;margin-bottom:8px' + (canBorrow ? '' : ';opacity:0.55') + '">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
     html += '<span style="color:#f0c040;font-weight:bold;font-size:14px">贷款 ' + principal + ' 积分</span>';
-    if(!canBorrow){
-      html += '<span style="color:#e74c3c;font-size:11px">信用不足（需 ' + (principal / CREDIT_PER_POINT) + ' 信用）</span>';
-    }
+    if(!canBorrow) html += '<span style="color:#e74c3c;font-size:11px">信用不足（需 ' + (principal / CREDIT_PER_POINT) + '）</span>';
     html += '</div>';
     html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">';
     LOAN_TERMS.forEach(function(months){
       var info = calcLoanInfo(principal, months);
       var selected = loanTermSelection[principal] === months;
       var btnClass = canBorrow ? (selected ? "gold" : "") : "";
-      var disabled = canBorrow ? "" : "disabled";
-      html += '<button class="btn small ' + btnClass + '" ' + disabled +
+      html += '<button class="btn small ' + btnClass + '" ' + (canBorrow ? "" : "disabled") +
         ' onclick="selectLoanTerm(' + principal + ',' + months + ')" ' +
         'style="display:flex;flex-direction:column;align-items:center;padding:6px 3px;line-height:1.4">' +
         '<span>' + months + '月</span>' +
@@ -1218,71 +1269,149 @@ function renderLoanOptions(){
     html += '</div>';
     if(canBorrow){
       var info = calcLoanInfo(principal, loanTermSelection[principal]);
-      html += '<div style="margin-top:8px;text-align:center">';
+      html += '<div style="margin-top:8px">';
       html += '<button class="btn gold" style="width:100%" onclick="confirmTakeLoan(' + principal + ')">' +
-        '借 ' + principal + ' 积分 · ' + loanTermSelection[principal] + '个月 · 每月还 ' + info.monthlyPayment + '（总还 ' + info.totalReturn + '）' +
-        '</button>';
+        '借 ' + principal + ' · ' + loanTermSelection[principal] + '个月 · 月供 ' + info.monthlyPayment + '（总还 ' + info.totalReturn + '）' +
+        '</button></div>';
+    }
+    html += '</div>';
+  });
+  return html;
+}
+function renderLoanActive(){
+  var active = state.loans.filter(function(l){ return !l.completed; });
+  if(active.length === 0) return '<div style="color:#888;text-align:center;padding:20px;font-size:13px">暂无活跃贷款</div>';
+  var html = "";
+  active.forEach(function(loan){
+    var idx = state.loans.indexOf(loan);
+    var cls = "loan-card" + (loan.overdue ? " overdue" : "");
+    var remainingPeriods = Math.ceil(loan.remaining / loan.monthlyPayment);
+    html += '<div class="' + cls + '">';
+    html += '<div class="loan-title">贷款 #' + loan.id + ' · 本金 ' + loan.principal + ' 积分' + (loan.overdue ? ' <span style="color:#e74c3c">【逾期】</span>' : '') + '</div>';
+    html += '<div class="loan-info">';
+    html += '月供 <span>' + loan.monthlyPayment + '</span>　已还 <span>' + loan.paidMonths + '/' + loan.months + '</span> 期<br>';
+    html += '剩余应还 <span>' + loan.remaining + '</span> 积分　约 <span>' + remainingPeriods + '</span> 期<br>';
+    html += '下次还款日 <span>' + loan.nextDue.y + '年' + loan.nextDue.m + '月' + loan.nextDue.d + '日</span><br>';
+    if(loan.overdue){
+      html += '<span style="color:#e74c3c">已逾期 ' + loan.overdueDays + ' 天（每日扣1信用）</span>';
+    }
+    html += '</div>';
+    html += '<div style="display:flex;gap:6px;margin-top:8px">';
+    var early = calcEarlyRepay(loan);
+    html += '<button class="btn small green" style="flex:1" onclick="earlyRepayLoan(' + idx + ')">提前还款（省' + early.discount + '）</button>';
+    html += '<button class="btn small red" style="flex:1" onclick="settleLoan(' + idx + ')">全额结清</button>';
+    html += '</div>';
+    html += '</div>';
+  });
+  return html;
+}
+function renderLoanRecords(){
+  if(state.loans.length === 0) return '<div style="color:#888;text-align:center;padding:20px;font-size:13px">暂无任何贷款记录</div>';
+  var html = "";
+  // 先显示逾期，再显示活跃，最后显示已完成
+  var sorted = state.loans.slice().sort(function(a, b){
+    if(a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+    if(a.completed !== b.completed) return a.completed ? 1 : -1;
+    return 0;
+  });
+  sorted.forEach(function(loan){
+    var idx = state.loans.indexOf(loan);
+    var cls = "loan-card" + (loan.completed ? " done" : (loan.overdue ? " overdue" : ""));
+    var status = loan.completed ? '✅ 已结清' : (loan.overdue ? '⚠️ 逾期中' : '⏳ 还款中');
+    html += '<div class="' + cls + '">';
+    html += '<div class="loan-title">贷款 #' + loan.id + ' · ' + loan.principal + ' 积分 · ' + loan.months + '个月　<span style="color:' +
+      (loan.completed ? '#2ecc71' : (loan.overdue ? '#e74c3c' : '#f0c040')) + '">' + status + '</span></div>';
+    html += '<div class="loan-info">';
+    html += '月供 <span>' + loan.monthlyPayment + '</span>　已还 <span>' + loan.totalPaid + '</span> / <span>' + (loan.monthlyPayment * loan.months) + '</span><br>';
+    if(loan.overdue){
+      html += '<span style="color:#e74c3c">已逾期 ' + loan.overdueDays + ' 天 · 剩余 ' + loan.remaining + '</span><br>';
+    }
+    html += '</div>';
+    if(!loan.completed){
+      html += '<div style="margin-top:6px">';
+      html += '<button class="btn small red" style="width:100%" onclick="settleLoan(' + idx + ')">立即结清（' + loan.remaining + ' 积分）</button>';
       html += '</div>';
     }
     html += '</div>';
   });
-  el.innerHTML = html;
+  return html;
 }
 function selectLoanTerm(principal, months){
   loanTermSelection[principal] = months;
-  renderLoanOptions();
+  renderLoanContent();
 }
 function confirmTakeLoan(principal){
   var months = loanTermSelection[principal];
-  if(state.credit * CREDIT_PER_POINT < principal){
-    alert("信用不足！");
-    return;
-  }
+  if(state.credit * CREDIT_PER_POINT < principal){ alert("信用不足！"); return; }
   var info = calcLoanInfo(principal, months);
-  if(!confirm("确认借款 " + principal + " 积分？\n\n分期：" + months + "个月\n每月还款：" + info.monthlyPayment + " 积分\n总还款：" + info.totalReturn + " 积分\n利息：" + info.interest + " 积分\n\n首次还款日期：" + (function(){
-    var d = addMonths({ y: state.dateY, m: state.dateM, d: state.dateD }, 1);
-    return d.y + "年" + d.m + "月" + d.d + "日";
-  })())) return;
   var today = { y: state.dateY, m: state.dateM, d: state.dateD };
   var nextDue = addMonths(today, 1);
+  if(!confirm("确认借款 " + principal + " 积分？\n\n分期：" + months + "个月\n每月还款：" + info.monthlyPayment + " 积分\n总还款：" + info.totalReturn + " 积分\n利息：" + info.interest + " 积分\n\n首次还款：" + nextDue.y + "年" + nextDue.m + "月" + nextDue.d + "日")) return;
+  LOAN_ID++;
   state.loans.push({
+    id: LOAN_ID,
     principal: principal,
     months: months,
     monthlyPayment: info.monthlyPayment,
-    totalReturn: info.totalReturn,
+    remaining: info.totalReturn,
+    totalPaid: 0,
     paidMonths: 0,
+    startDate: today,
     nextDue: nextDue,
-    completed: false
+    overdue: false,
+    overdueDays: 0,
+    completed: false,
+    completedAt: null
   });
   state.points += principal;
   renderTop(); save();
-  addLog("💰 贷款：" + principal + "积分，" + months + "个月，月供" + info.monthlyPayment);
+  addLog("💰 贷款 #" + LOAN_ID + "：" + principal + "积分，" + months + "个月，月供" + info.monthlyPayment);
   renderLoanPanel();
-  alert("✅ 借款成功！+" + principal + " 积分\n首次还款：" + nextDue.y + "年" + nextDue.m + "月" + nextDue.d + "日，金额 " + info.monthlyPayment);
+  alert("✅ 借款成功！+" + principal + " 积分\n贷款编号 #" + LOAN_ID);
 }
-function renderActiveLoans(){
-  var el = document.getElementById("activeLoans");
-  var active = state.loans.filter(function(l){ return !l.completed; });
-  if(active.length === 0){
-    el.innerHTML = '<div style="color:#888;text-align:center;padding:10px;font-size:12px">暂无活跃贷款</div>';
+function earlyRepayLoan(idx){
+  var loan = state.loans[idx];
+  if(!loan || loan.completed) return;
+  var early = calcEarlyRepay(loan);
+  if(state.points < early.cost){
+    alert("积分不足！\n提前还款需 " + early.cost + " 积分（原剩余 " + loan.remaining + "，减免 " + early.discount + "）\n当前积分：" + state.points);
     return;
   }
-  var html = "";
-  active.forEach(function(loan){
-    var remaining = loan.months - loan.paidMonths;
-    var remainAmount = loan.monthlyPayment * remaining;
-    html += '<div style="background:#1a1a2e;border:1px solid #f0c040;border-radius:8px;padding:10px;margin-bottom:6px">' +
-      '<div style="color:#fff;font-weight:bold">本金 ' + loan.principal + ' · ' + loan.months + '个月 · 月供' + loan.monthlyPayment + '</div>' +
-      '<div style="color:#888;font-size:11px;margin-top:4px">已还 ' + loan.paidMonths + '/' + loan.months + ' 期 · 剩余 ' + remainAmount + ' 积分</div>' +
-      '<div style="color:#f0c040;font-size:11px;margin-top:2px">下次还款：' + loan.nextDue.y + '年' + loan.nextDue.m + '月' + loan.nextDue.d + '日</div>' +
-      '</div>';
-  });
-  el.innerHTML = html;
+  if(!confirm("提前还款？\n\n原剩余应还：" + loan.remaining + " 积分\n减免利息：" + early.discount + " 积分\n实际支付：" + early.cost + " 积分\n\n还清后贷款结束，信用+50")) return;
+  state.points -= early.cost;
+  loan.totalPaid += early.cost;
+  loan.remaining = 0;
+  loan.completed = true;
+  loan.overdue = false;
+  loan.completedAt = formatGameDate();
+  state.credit = Math.min(CREDIT_MAX, state.credit + 50);
+  renderTop(); save();
+  addLog("🏦 提前还清贷款 #" + loan.id + "，支付 " + early.cost + "，省 " + early.discount);
+  renderLoanPanel();
+  alert("✅ 提前还款成功！\n支付 " + early.cost + " 积分\n节省 " + early.discount + " 积分利息\n信用+50");
+}
+function settleLoan(idx){
+  var loan = state.loans[idx];
+  if(!loan || loan.completed) return;
+  if(state.points < loan.remaining){
+    alert("积分不足！\n结清需 " + loan.remaining + " 积分\n当前积分：" + state.points);
+    return;
+  }
+  if(!confirm("全额结清贷款 #" + loan.id + "？\n\n剩余应还：" + loan.remaining + " 积分\n\n还清后信用+50")) return;
+  state.points -= loan.remaining;
+  loan.totalPaid += loan.remaining;
+  loan.remaining = 0;
+  loan.completed = true;
+  loan.overdue = false;
+  loan.completedAt = formatGameDate();
+  state.credit = Math.min(CREDIT_MAX, state.credit + 50);
+  renderTop(); save();
+  addLog("🏦 结清贷款 #" + loan.id + "，支付 " + loan.remaining);
+  renderLoanPanel();
+  alert("✅ 已结清！信用+50");
 }
 
-/* ============================================================
-   存档系统
-   ============================================================ */
+/* ========== 存档 ========== */
 function saveToSlot(key){
   try{
     var data = JSON.parse(JSON.stringify(state));
@@ -1333,18 +1462,12 @@ function renderSlotCard(key, title, data, isAuto){
   var yhVal = (data.leaderboard && data.leaderboard["樱花"]) !== undefined ? data.leaderboard["樱花"] : "?";
   var dateStr = (data.dateY || 1) + "年" + (data.dateM || 1) + "月" + (data.dateD || 1) + "日";
   return '<div class="slot-card' + isAutoClass + '">' +
-    '<div class="slot-header">' +
-    '<span class="slot-title' + titleClass + '">' + title + (isAuto ? '<span class="slot-tag">每日自动</span>' : '') + '</span>' +
-    '<span style="color:#888;font-size:11px">' + t + '</span>' +
-    '</div>' +
+    '<div class="slot-header"><span class="slot-title' + titleClass + '">' + title + (isAuto ? '<span class="slot-tag">每日自动</span>' : '') + '</span>' +
+    '<span style="color:#888;font-size:11px">' + t + '</span></div>' +
     '<div class="slot-info">' +
-    '日期 <span>' + dateStr + '</span>　' +
-    '积分 <span>' + data.points + '</span>　' +
-    '体力 <span>' + data.stamina + '/10</span><br>' +
-    '信用 <span>' + (data.credit || 600) + '</span>　' +
-    '华夏国运 <span>' + hxVal + '</span>　樱花国运 <span>' + yhVal + '</span><br>' +
-    '收藏名臣 <span>' + (data.owned ? data.owned.length : 0) + '</span> 名　' +
-    '活跃贷款 <span>' + (data.loans ? data.loans.filter(function(l){ return !l.completed; }).length : 0) + '</span> 笔' +
+    '日期 <span>' + dateStr + '</span>　积分 <span>' + data.points + '</span>　信用 <span>' + (data.credit || 600) + '</span><br>' +
+    '华夏 <span>' + hxVal + '</span>　樱花 <span>' + yhVal + '</span>　' +
+    '收藏 <span>' + (data.owned ? data.owned.length : 0) + '</span> 名' +
     '</div>' +
     '<div class="slot-buttons">' +
     '<button class="btn small gold" onclick="doSaveSlot(\'' + key + '\')">' + (isAuto ? '立即存入' : '覆盖存档') + '</button>' +
@@ -1360,33 +1483,28 @@ function doSaveSlot(key){
   } else {
     if(!confirm("确定要立即覆盖自动存档吗？")) return;
   }
-  if(saveToSlot(key)){
-    addLog("手动存档到槽位：" + (isAuto ? "自动槽" : key));
-    renderSaveSlots();
-    alert("✅ 存档成功！");
-  } else { alert("❌ 存档失败！"); }
+  if(saveToSlot(key)){ addLog("手动存档：" + (isAuto ? "自动槽" : key)); renderSaveSlots(); alert("✅ 存档成功！"); }
+  else alert("❌ 存档失败！");
 }
 function doLoadSlot(key){
   var data = readSlot(key);
   if(!data){ alert("该槽位没有有效存档！"); return; }
-  if(!confirm("确定读取该存档？\n\n日期：" + (data.dateY||1) + "年" + (data.dateM||1) + "月" + (data.dateD||1) + "日\n积分：" + data.points + "\n华夏国运：" + (data.leaderboard ? data.leaderboard["华夏"] : "?") + "\n\n当前进度将被覆盖。")) return;
+  if(!confirm("确定读取该存档？\n\n日期：" + (data.dateY||1) + "年" + (data.dateM||1) + "月" + (data.dateD||1) + "日\n积分：" + data.points + "\n\n当前进度将被覆盖。")) return;
   state = defaultState();
   mergeState(data);
   renderTop(); save();
   closeModal("savePanelModal");
   alert("✅ 读档成功！");
-  if(state.leaderboard["华夏"] < 0){
-    setTimeout(function(){ openModal("gameOverModal"); }, 300);
-  }
+  if(state.leaderboard["华夏"] < 0) setTimeout(function(){ openModal("gameOverModal"); }, 300);
 }
 function doDeleteSlot(key){
   if(!confirm("确定删除该存档？不可恢复！")) return;
   deleteSlot(key);
-  addLog("删除存档槽：" + (key === AUTO_SLOT_KEY ? "自动槽" : key));
+  addLog("删除存档：" + (key === AUTO_SLOT_KEY ? "自动槽" : key));
   renderSaveSlots();
 }
 
-/* 工具 */
+/* ========== 工具 ========== */
 function pickFromData(dataRef, boardKey, minRank, maxRank){
   var all = (dataRef && dataRef[boardKey]) || [];
   if(all.length === 0) return null;
@@ -1455,7 +1573,7 @@ function exitGame(){
   document.body.innerHTML = '<div class="exit-screen">游 戏 已 退 出</div>';
 }
 
-/* 信物 & 背包 */
+/* ========== 信物 & 背包 ========== */
 function addToken(name, dynasty, emperor){
   var t = null;
   for(var i=0;i<state.tokens.length;i++){ if(state.tokens[i].name === name) t = state.tokens[i]; }
@@ -1518,7 +1636,7 @@ function openGive(kind, key, tier){
   if(kind === "token"){
     hint.innerHTML = '「' + key + '的信物」<span style="color:#f0c040">只能赠送给同名名臣【' + key + '】</span>';
   } else {
-    hint.innerHTML = '「' + ITEM_DEFS[key].name + '(' + tier + '级)」<span style="color:#2ecc71">每个 +' + FAVOR_GAIN[tier] + ' 好感</span>　<span style="color:#f0c040">只能赠送给同等级或更高级的角色</span>';
+    hint.innerHTML = '「' + ITEM_DEFS[key].name + '(' + tier + '级)」<span style="color:#2ecc71">每个 +' + FAVOR_GAIN[tier] + ' 好感</span>　<span style="color:#f0c040">只可赠送给同等级或更高级角色</span>';
   }
   var listHtml = '<h4>选择目标名臣</h4><div class="pick-list">';
   state.owned.forEach(function(o, i){
@@ -1569,7 +1687,7 @@ function confirmGive(){
   var item = state.owned[gc.targetIdx];
   if(!item) return;
   if(gc.kind === "token"){
-    if(item.name !== gc.key){ alert("「" + gc.key + "的信物」只能赠送给【" + gc.key + "】本人！"); return; }
+    if(item.name !== gc.key){ alert("信物只能给同名名臣！"); return; }
     var bonusType = document.getElementById("giveBonusType").value;
     var tokenInfo = null;
     for(var i=0;i<state.tokens.length;i++){ if(state.tokens[i].name === gc.key) tokenInfo = state.tokens[i]; }
@@ -1587,7 +1705,7 @@ function confirmGive(){
     }
     removeToken(gc.key, qty);
     if(converted > 0) state.points += converted * 10;
-    addLog("【" + item.name + "】赠送" + gc.key + "信物×" + gained);
+    addLog("【" + item.name + "】赠送信物×" + gained);
     save(); closeModal("giveModal");
     showResult("🎁 赠送成功",
       '<div class="result-card"><div class="r">' + item.name + '</div>' +
@@ -1601,18 +1719,16 @@ function confirmGive(){
     if(cnt <= 0){ alert("道具不足"); return; }
     var qty2 = Math.min(gc.qty, cnt);
     var perItem = FAVOR_GAIN[gc.tier] || 1;
-    var gain = perItem * qty2;
     var before = item.favor || 0;
-    item.favor = Math.min(FAVOR_MAX, before + gain);
+    item.favor = Math.min(FAVOR_MAX, before + perItem * qty2);
     var actual = item.favor - before;
     state.items[gc.key][gc.tier] -= qty2;
-    addLog("【" + item.name + "】赠送" + ITEM_DEFS[gc.key].name + "(" + gc.tier + ")×" + qty2 + " → 好感+" + actual);
+    addLog("【" + item.name + "】赠送道具×" + qty2 + " → 好感+" + actual);
     save(); closeModal("giveModal");
     showResult("🎁 赠送成功",
       '<div class="result-card"><div class="r">' + item.name + '</div>' +
       '<div class="v">好感度：' + item.favor + ' / ' + FAVOR_MAX + '</div>' +
-      '<div class="v">本次增加：+' + actual + '</div>' +
-      '<div class="v">当前加成：+' + calcFavorBonus(item.favor) + '</div></div>',
+      '<div class="v">本次增加：+' + actual + '</div></div>',
       '<span class="win">好感度提升！</span>');
   }
 }
@@ -1626,15 +1742,13 @@ function renderShop(){
       '<div style="color:#f0c040;font-weight:bold;font-size:15px">' + def.name + '</div>' +
       '<div style="color:#888;font-size:11px;margin-top:4px">对应：' +
       def.boardKeys.map(function(b){ for(var i=0;i<BOARDS.length;i++){ if(BOARDS[i].key === b) return BOARDS[i].title; } return b; }).join(" / ") + '</div>' +
-      '<div style="color:#888;font-size:11px;margin-top:2px">⚠️ 只可赠送给同等级或更高级角色</div>' +
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
     Object.keys(SHOP_TIERS).forEach(function(t){
       var tier = SHOP_TIERS[t];
-      var gain = FAVOR_GAIN[t] || 1;
       html += '<div class="shop-card" onclick="buyItem(\'' + k + '\',\'' + t + '\')">' +
         '<div class="sname">' + t + '级</div>' +
         '<div class="sprice">' + tier.price + '积分</div>' +
-        '<div class="sdesc">好感 +' + gain + '</div></div>';
+        '<div class="sdesc">好感 +' + FAVOR_GAIN[t] + '</div></div>';
     });
     html += '</div></div>';
   });
@@ -1646,9 +1760,9 @@ function buyItem(itemKey, tier){
   state.points -= price;
   state.items[itemKey][tier] = (state.items[itemKey][tier] || 0) + 1;
   renderTop(); save();
-  addLog("商店购买：" + ITEM_DEFS[itemKey].name + "(" + tier + "级) → 花费" + price + "，好感+" + FAVOR_GAIN[tier]);
+  addLog("商店购买：" + ITEM_DEFS[itemKey].name + "(" + tier + "级) → 花费" + price);
   renderShop();
-  alert("购买成功！获得 " + ITEM_DEFS[itemKey].name + "(" + tier + "级) ×1\n每次赠送好感 +" + FAVOR_GAIN[tier]);
+  alert("购买成功！获得 " + ITEM_DEFS[itemKey].name + "(" + tier + "级) ×1");
 }
 
 function openJob(){ renderJob(); openModal("jobModal"); }
@@ -1657,8 +1771,7 @@ function renderJob(){
   var html = "";
   JOBS.forEach(function(j){
     html += '<div class="job-card" onclick="doJob(\'' + j.key + '\')">' +
-      '<div><div class="jname">' + j.name + '</div>' +
-      '<div class="jinfo">消耗 ' + j.cost + ' 体力</div></div>' +
+      '<div><div class="jname">' + j.name + '</div><div class="jinfo">消耗 ' + j.cost + ' 体力</div></div>' +
       '<div class="jreward">+' + j.reward + '积分</div></div>';
   });
   document.getElementById("jobList").innerHTML = html;
@@ -1671,7 +1784,7 @@ function doJob(key){
   state.stamina -= j.cost;
   state.points += j.reward;
   renderTop(); save();
-  addLog("打工【" + j.name + "】消耗" + j.cost + "体力 → +" + j.reward + "积分");
+  addLog("打工【" + j.name + "】+" + j.reward + "积分");
   renderJob();
   alert("打工完成！+" + j.reward + "积分，剩余体力：" + state.stamina);
 }
@@ -1698,7 +1811,7 @@ function renderDrawTabs(){
 function renderDrawPanel(){
   var b = null;
   for(var i=0;i<BOARDS.length;i++){ if(BOARDS[i].key === currentDrawBoard) b = BOARDS[i]; }
-  var html = '<p class="hint">' + b.title + ' · ' + b.type + ' · ' + b.label + '<br>抽取华夏名臣，重复转化为信物</p><div class="draw-grid">';
+  var html = '<p class="hint">' + b.title + ' · ' + b.type + ' · ' + b.label + '</p><div class="draw-grid">';
   Object.keys(TIERS).forEach(function(t){
     var tier = TIERS[t];
     html += '<div class="draw-card" onclick="draw(\'' + b.key + '\',\'' + t + '\')">' +
@@ -1720,17 +1833,15 @@ function draw(boardKey, tierKey){
   var areaHtml = "";
   if(isOwned(boardKey, row[0])){
     addToken(row[3], row[1], row[2]);
-    areaHtml = '<div class="result-card"><div class="r">重复名臣（' + tierKey + '）</div>' +
+    areaHtml = '<div class="result-card"><div class="r">重复名臣</div>' +
       '<div class="n">' + row[1] + '_' + row[2] + '_' + row[3] + '</div>' +
-      '<div class="v">转化为「' + row[3] + '的信物」×1</div></div>';
-    addLog("抽取重复：" + row[3] + " → 信物×1");
+      '<div class="v">转化为信物×1</div></div>';
   } else {
     var item = buildOwnedItem(boardKey, row);
     if(item) state.owned.push(item);
     areaHtml = '<div class="result-card"><div class="r">获得（' + tierKey + '）</div>' +
       '<div class="n">' + row[1] + '_' + row[2] + '_' + row[3] + '</div>' +
-      '<div class="v">' + b.label + '：' + row[4] + ' · 第' + row[0] + '名</div></div>';
-    addLog("抽取【" + b.title + "】" + tierKey + "档 → " + row[3]);
+      '<div class="v">' + b.label + '：' + row[4] + '</div></div>';
   }
   renderTop(); save();
   closeModal("drawModal");
@@ -1769,7 +1880,7 @@ function renderRankPanel(){
 function openMyCollection(){ renderCollection(); openModal("collectionModal"); }
 function renderCollection(){
   var el = document.getElementById("collectionPanel");
-  if(state.owned.length === 0){ el.innerHTML = '<div class="collect-empty">暂无收藏，去抽取或领新手礼包吧！</div>'; return; }
+  if(state.owned.length === 0){ el.innerHTML = '<div class="collect-empty">暂无收藏</div>'; return; }
   var groups = {};
   state.owned.forEach(function(o){
     if(!groups[o.boardKey]) groups[o.boardKey] = [];
@@ -1781,7 +1892,7 @@ function renderCollection(){
     for(var i=0;i<BOARDS.length;i++){ if(BOARDS[i].key === k) b = BOARDS[i]; }
     if(!b) return;
     var list = groups[k].slice().sort(function(a,c){ return a.rank - c.rank; });
-    html += '<div class="collect-group"><div class="gt">' + b.title + '（共 ' + list.length + ' 个）· 点击查看详情</div>' +
+    html += '<div class="collect-group"><div class="gt">' + b.title + '（' + list.length + '个）</div>' +
       '<table><thead><tr><th>排名</th><th>朝代_皇帝_人名</th><th>' + b.label + '</th><th>等级</th><th>好感</th></tr></thead><tbody>';
     list.forEach(function(o){
       var idx = state.owned.indexOf(o);
@@ -1828,29 +1939,16 @@ function claimGift(){
   var mb = mouBoards[Math.floor(Math.random() * mouBoards.length)];
   var wu = pickFromData(DATA_HX, wb, 21, 40);
   var mou = pickFromData(DATA_HX, mb, 21, 40);
-  if(!wu || !mou){ alert("数据缺失，请先补全华夏百人数据"); return; }
+  if(!wu || !mou){ alert("数据缺失"); return; }
   var wuText = "", mouText = "";
-  if(isOwned(wb, wu[0])){
-    addToken(wu[3], wu[1], wu[2]);
-    wuText = '<div class="result-card"><div class="r">武将(重复)</div><div class="n">' + wu[3] + '</div><div class="v">获得信物×1</div></div>';
-  } else {
-    var item = buildOwnedItem(wb, wu);
-    if(item) state.owned.push(item);
-    wuText = '<div class="result-card"><div class="r">武将</div><div class="n">' + wu[1] + '_' + wu[2] + '_' + wu[3] + '</div><div class="v">第' + wu[0] + '名 · 值' + wu[4] + ' · ' + getCharTier(wu[0]) + '级</div></div>';
-  }
-  if(isOwned(mb, mou[0])){
-    addToken(mou[3], mou[1], mou[2]);
-    mouText = '<div class="result-card"><div class="r">谋士(重复)</div><div class="n">' + mou[3] + '</div><div class="v">获得信物×1</div></div>';
-  } else {
-    var item2 = buildOwnedItem(mb, mou);
-    if(item2) state.owned.push(item2);
-    mouText = '<div class="result-card"><div class="r">谋士</div><div class="n">' + mou[1] + '_' + mou[2] + '_' + mou[3] + '</div><div class="v">第' + mou[0] + '名 · 值' + mou[4] + ' · ' + getCharTier(mou[0]) + '级</div></div>';
-  }
+  if(isOwned(wb, wu[0])){ addToken(wu[3], wu[1], wu[2]); wuText = '<div class="result-card"><div class="r">武将(重复)</div><div class="n">' + wu[3] + '</div><div class="v">信物×1</div></div>'; }
+  else { var item = buildOwnedItem(wb, wu); if(item) state.owned.push(item); wuText = '<div class="result-card"><div class="r">武将</div><div class="n">' + wu[1] + '_' + wu[2] + '_' + wu[3] + '</div><div class="v">第' + wu[0] + '名</div></div>'; }
+  if(isOwned(mb, mou[0])){ addToken(mou[3], mou[1], mou[2]); mouText = '<div class="result-card"><div class="r">谋士(重复)</div><div class="n">' + mou[3] + '</div><div class="v">信物×1</div></div>'; }
+  else { var item2 = buildOwnedItem(mb, mou); if(item2) state.owned.push(item2); mouText = '<div class="result-card"><div class="r">谋士</div><div class="n">' + mou[1] + '_' + mou[2] + '_' + mou[3] + '</div><div class="v">第' + mou[0] + '名</div></div>'; }
   state.giftClaimed = true;
   renderTop(); save();
   closeModal("giftModal");
   showResult("🎁 新手礼包", wuText + mouText, '<span class="win">礼包开启！</span>');
-  addLog("新手礼包：武将" + wu[3] + "，谋士" + mou[3]);
 }
 
 function openPick(mode, battleMode, diffKey){
@@ -1861,13 +1959,13 @@ function openPick(mode, battleMode, diffKey){
   if(mode === "daily"){
     pool = state.owned.filter(function(o){ return o.boardKey === boardKey; });
     title = "选择出战 · " + BATTLE_CONFIG[battleMode].title;
-    hint = "从收藏中选一名" + BATTLE_CONFIG[battleMode].type + "，对手为樱花名臣";
+    hint = "从收藏中选一名" + BATTLE_CONFIG[battleMode].type;
   } else {
     pool = state.owned.filter(function(o){ return wuBoards.indexOf(o.boardKey) >= 0 || mouBoards.indexOf(o.boardKey) >= 0; });
     title = "选择出战 · 国运之战";
-    hint = "需要一名武将 + 一名谋士（共选两个）";
+    hint = "需要一名武将 + 一名谋士";
   }
-  if(pool.length === 0){ alert("没有可用名臣！请先去抽取。"); return; }
+  if(pool.length === 0){ alert("没有可用名臣！"); return; }
   pickContext = { mode:mode, battleMode:battleMode, diffKey:diffKey, wuPick:null, mouPick:null, pool:pool };
   document.getElementById("pickTitle").textContent = title;
   document.getElementById("pickHint").textContent = hint;
@@ -1888,12 +1986,11 @@ function renderPickList(){
     } else {
       if(pc.wuPick === o) cls += " selected";
     }
-    var typeTag = isWu ? "武将" : "谋士";
     var s = getItemStats(o);
     html += '<div class="' + cls + '" onclick="togglePick(' + idx + ')">' +
       '<div><div style="color:#fff;font-weight:bold;font-size:13px">' + o.dynasty + '_' + o.emperor + '_' + o.name +
       '<span style="color:#f0c040;font-size:10px;margin-left:4px">[' + getCharTier(o.rank) + ']</span></div>' +
-      '<div style="color:#888;font-size:11px">' + o.label + ' · 第' + o.rank + '名 · ' + typeTag + ' · 好感' + (o.favor || 0) + '</div></div>' +
+      '<div style="color:#888;font-size:11px">' + o.label + ' · 第' + o.rank + '名 · 好感' + (o.favor || 0) + '</div></div>' +
       '<div style="color:#4fc3f7">' + s.effValue + '</div></div>';
   });
   document.getElementById("pickList").innerHTML = html;
@@ -1912,11 +2009,11 @@ function confirmPick(){
   if(!pickContext) return;
   var pc = pickContext;
   if(pc.mode === "daily"){
-    if(!pc.wuPick){ alert("请选择一名出战名臣！"); return; }
+    if(!pc.wuPick){ alert("请选择名臣！"); return; }
     closeModal("pickModal");
     startBattleWithPick(pc.battleMode, pc.diffKey, pc.wuPick);
   } else {
-    if(!pc.wuPick || !pc.mouPick){ alert("需要选择一名武将和一名谋士！"); return; }
+    if(!pc.wuPick || !pc.mouPick){ alert("需要一武将一谋士！"); return; }
     closeModal("pickModal");
     startMainQuestWithPick(pc.wuPick, pc.mouPick);
   }
@@ -1926,7 +2023,7 @@ function openBattle(mode){
   currentBattleMode = mode;
   var cfg = BATTLE_CONFIG[mode];
   document.getElementById("battleTitle").textContent = cfg.title + " · " + cfg.type;
-  document.getElementById("battleHint").textContent = "选择难度（对手为樱花名臣）";
+  document.getElementById("battleHint").textContent = "选择难度";
   renderDiffGrid();
   openModal("battleModal");
 }
@@ -1944,9 +2041,9 @@ function renderDiffGrid(){
 function chooseDiff(diffKey){
   var cfg = BATTLE_CONFIG[currentBattleMode];
   var d = DIFFICULTY[diffKey];
-  if(state.points < d.fee){ alert("积分不足！需要 " + d.fee + " 积分。当前：" + state.points); return; }
+  if(state.points < d.fee){ alert("积分不足！需要 " + d.fee); return; }
   var myPool = state.owned.filter(function(o){ return o.boardKey === cfg.boardKey; });
-  if(myPool.length === 0){ alert("你还没有【" + cfg.title + "】对应的名臣！请先去抽取。"); return; }
+  if(myPool.length === 0){ alert("你还没有对应名臣！"); return; }
   closeModal("battleModal");
   openPick("daily", currentBattleMode, diffKey);
 }
@@ -1959,11 +2056,7 @@ function startBattleWithPick(battleMode, diffKey, myItem){
   var oppRow = pickFromData(DATA_JP, cfg.boardKey, d.range[0], d.range[1]);
   if(!oppRow){ alert("对手数据缺失"); return; }
   var oppItem = buildOwnedItem(cfg.boardKey, oppRow);
-  if(!oppItem){ alert("对手创建失败"); return; }
-  startDuel({
-    mode: "daily", title: cfg.title, diffName: d.name, fee: d.fee, mult: d.mult,
-    player: myItem, opp: oppItem
-  });
+  startDuel({ mode: "daily", title: cfg.title, diffName: d.name, fee: d.fee, mult: d.mult, player: myItem, opp: oppItem });
 }
 
 function openMainQuest(){
@@ -1971,9 +2064,7 @@ function openMainQuest(){
   var mouBoards = ["intel","logistics","advOverall"];
   var myWuPool = state.owned.filter(function(o){ return wuBoards.indexOf(o.boardKey) >= 0; });
   var myMouPool = state.owned.filter(function(o){ return mouBoards.indexOf(o.boardKey) >= 0; });
-  if(myWuPool.length === 0 || myMouPool.length === 0){
-    alert("国运之战需要至少一名武将和一名谋士！请先去抽取。"); return;
-  }
+  if(myWuPool.length === 0 || myMouPool.length === 0){ alert("国运之战需要一武将一谋士！"); return; }
   openPick("main", null, null);
 }
 function startMainQuestWithPick(myWuItem, myMouItem){
@@ -1984,7 +2075,6 @@ function startMainQuestWithPick(myWuItem, myMouItem){
   if(!oppWuRow || !oppMouRow){ alert("对手数据缺失"); return; }
   var oppWuItem = buildOwnedItem("force", oppWuRow);
   var oppMouItem = buildOwnedItem("intel", oppMouRow);
-  if(!oppWuItem || !oppMouItem){ alert("对手创建失败"); return; }
   var myWuEff = myWuItem.value + calcFavorBonus(myWuItem.favor);
   var myMouEff = myMouItem.value + calcFavorBonus(myMouItem.favor);
   var myVal = Math.round((myWuEff + myMouEff) / 2);
@@ -2003,14 +2093,10 @@ function startMainQuestWithPick(myWuItem, myMouItem){
     critRate: Math.min(100, (oppWuItem.critRate + oppMouItem.critRate) / 2),
     critDmg: Math.min(500, (oppWuItem.critDmg + oppMouItem.critDmg) / 2)
   };
-  startDuel({
-    mode: "main", title: "国运之战 · 华夏 vs 樱花", diffName: "随机", fee: 0, mult: 0,
-    player: playerCombined, opp: oppCombined,
-    _myWu: myWuItem, _myMou: myMouItem
-  });
+  startDuel({ mode: "main", title: "国运之战", diffName: "随机", fee: 0, mult: 0, player: playerCombined, opp: oppCombined, _myWu: myWuItem, _myMou: myMouItem });
 }
 
-/* 决斗 */
+/* ========== 决斗 ========== */
 function startDuel(ctx){
   var pStats = getItemStats(ctx.player);
   var oStats = getItemStats(ctx.opp);
@@ -2019,26 +2105,22 @@ function startDuel(ctx){
     mode: ctx.mode, title: ctx.title, diffName: ctx.diffName, fee: ctx.fee, mult: ctx.mult,
     player: ctx.player, opp: ctx.opp, _myWu: ctx._myWu, _myMou: ctx._myMou,
     playerHp: pStats.hp, playerHpMax: pStats.hp, oppHp: oStats.hp, oppHpMax: oStats.hp,
-    pStats: pStats, oStats: oStats,
-    first: null, turn: null, round: 0, finished: false, dice: null, phase: "guess"
+    pStats: pStats, oStats: oStats, first: null, turn: null, round: 0, finished: false, dice: null, phase: "guess"
   };
   document.getElementById("duelVsArea").innerHTML =
     '<div class="vs-side"><div class="result-card">' +
-    '<div class="r">我方 · ' + ctx.title + '</div>' +
-    '<div class="n">' + ctx.player.name + '</div>' +
+    '<div class="r">我方 · ' + ctx.title + '</div><div class="n">' + ctx.player.name + '</div>' +
     '<div class="v">攻' + pStats.atk + ' 防' + pStats.def + ' 暴' + pStats.critRate + '%/' + pStats.critDmg + '%</div>' +
     '<div class="hp-bar"><div class="hp-fill" id="playerHpBar" style="width:100%"></div></div>' +
     '<div style="font-size:11px;color:#888">HP <span id="playerHpText">' + pStats.hp + '</span>/' + pStats.hp + '</div></div></div>' +
     '<div class="vs-vs">VS</div>' +
     '<div class="vs-side"><div class="result-card">' +
-    '<div class="r">对手 · 樱花 · 第' + ctx.opp.rank + '名</div>' +
-    '<div class="n">' + ctx.opp.name + '</div>' +
+    '<div class="r">对手 · 樱花 · 第' + ctx.opp.rank + '名</div><div class="n">' + ctx.opp.name + '</div>' +
     '<div class="v">攻' + oStats.atk + ' 防' + oStats.def + ' 暴' + oStats.critRate + '%/' + oStats.critDmg + '%</div>' +
     '<div class="hp-bar"><div class="hp-fill opp" id="oppHpBar" style="width:100%"></div></div>' +
     '<div style="font-size:11px;color:#888">HP <span id="oppHpText">' + oStats.hp + '</span>/' + oStats.hp + '</div></div></div>';
   document.getElementById("roundLog").innerHTML =
-    '<div class="rinfo" style="text-align:center;padding:14px;font-size:14px;line-height:1.8">' +
-    '🎲 投掷骰子决定先手<br><span style="color:#888;font-size:12px">请猜单数还是双数</span></div>' +
+    '<div class="rinfo" style="text-align:center;padding:14px;font-size:14px;line-height:1.8">🎲 投掷骰子决定先手<br><span style="color:#888;font-size:12px">请猜单数还是双数</span></div>' +
     '<div class="guess-area">' +
     '<button class="guess-btn" onclick="playerGuess(\'odd\')">单</button>' +
     '<button class="guess-btn" onclick="playerGuess(\'even\')">双</button>' +
@@ -2053,17 +2135,13 @@ function playerGuess(guess){
   var dice = Math.floor(Math.random() * 6) + 1;
   var diceParity = dice % 2 === 1 ? "odd" : "even";
   var correct = guess === diceParity;
-  dc.dice = dice;
-  dc.guessCorrect = correct;
+  dc.dice = dice; dc.guessCorrect = correct;
   dc.first = correct ? "player" : "opp";
-  dc.turn = dc.first;
-  dc.phase = "battle";
+  dc.turn = dc.first; dc.phase = "battle";
   var log = document.getElementById("roundLog");
   var parityText = diceParity === "odd" ? "单数" : "双数";
   var guessText = guess === "odd" ? "单" : "双";
-  var resultLine = correct
-    ? '<span style="color:#2ecc71;font-weight:bold">✅ 猜中！我方先手</span>'
-    : '<span style="color:#e74c3c;font-weight:bold">❌ 猜错！对方先手</span>';
+  var resultLine = correct ? '<span style="color:#2ecc71;font-weight:bold">✅ 猜中！我方先手</span>' : '<span style="color:#e74c3c;font-weight:bold">❌ 猜错！对方先手</span>';
   log.innerHTML =
     '<div class="rinfo">🎲 骰子结果：<span style="color:#fff;font-size:16px;font-weight:bold">' + dice + '</span> 点（' + parityText + '）</div>' +
     '<div class="rinfo">你猜：' + guessText + ' → ' + resultLine + '</div>' +
@@ -2078,18 +2156,18 @@ function autoBattle(){
   if(dc.turn === "player"){
     var r = calcDamage(dc.pStats.atk, dc.oStats.def, dc.pStats.critRate, dc.pStats.critDmg);
     dc.oppHp = Math.max(0, dc.oppHp - r.dmg);
-    log.innerHTML += '<div class="' + (r.isCrit ? "rcrit" : "rwin") + '">第' + dc.round + '回合 · 我方' + (r.isCrit ? "【暴击】" : "") + '出手：造成 ' + r.dmg + ' 伤害（对方剩余HP ' + dc.oppHp + '）</div>';
+    log.innerHTML += '<div class="' + (r.isCrit ? "rcrit" : "rwin") + '">第' + dc.round + '回合 · 我方' + (r.isCrit ? "【暴击】" : "") + '出手：' + r.dmg + ' 伤害（对方HP ' + dc.oppHp + '）</div>';
     dc.turn = "opp";
   } else {
     var r2 = calcDamage(dc.oStats.atk, dc.pStats.def, dc.oStats.critRate, dc.oStats.critDmg);
     dc.playerHp = Math.max(0, dc.playerHp - r2.dmg);
-    log.innerHTML += '<div class="' + (r2.isCrit ? "rcrit" : "rlose") + '">第' + dc.round + '回合 · 对方' + (r2.isCrit ? "【暴击】" : "") + '出手：造成 ' + r2.dmg + ' 伤害（我方剩余HP ' + dc.playerHp + '）</div>';
+    log.innerHTML += '<div class="' + (r2.isCrit ? "rcrit" : "rlose") + '">第' + dc.round + '回合 · 对方' + (r2.isCrit ? "【暴击】" : "") + '出手：' + r2.dmg + ' 伤害（我方HP ' + dc.playerHp + '）</div>';
     dc.turn = "player";
   }
   updateHpBars();
   log.scrollTop = log.scrollHeight;
   if(dc.playerHp <= 0 || dc.oppHp <= 0){ dc.finished = true; finishDuel(); }
-  else { autoBattleTimer = setTimeout(autoBattle, 800); }
+  else autoBattleTimer = setTimeout(autoBattle, 800);
 }
 function updateHpBars(){
   var dc = duelContext;
@@ -2122,35 +2200,27 @@ function finishDuel(){
     if(win){
       var back = dc.fee + Math.floor(dc.fee * dc.mult);
       state.points += back;
-      var net = back - dc.fee;
-      gainText = '<span class="win">胜利！返还 ' + back + ' 积分（本金' + dc.fee + ' + 奖励' + net + '）</span>';
+      gainText = '<span class="win">胜利！返还 ' + back + ' 积分（净赚 ' + (back - dc.fee) + '）</span>';
       var ownedRef = state.owned.indexOf(dc.player) >= 0 ? dc.player : null;
-      if(ownedRef){
-        var delta = addFavor(ownedRef, 2);
-        if(delta > 0) gainText += '<br><span style="color:#2ecc71">' + ownedRef.name + ' 好感度 +' + delta + '</span>';
-      }
+      if(ownedRef){ var delta = addFavor(ownedRef, 2); if(delta > 0) gainText += '<br><span style="color:#2ecc71">' + ownedRef.name + ' 好感+' + delta + '</span>'; }
     } else {
       gainText = '<span class="lose">败北！损失 ' + dc.fee + ' 积分</span>';
       var ownedRef2 = state.owned.indexOf(dc.player) >= 0 ? dc.player : null;
-      if(ownedRef2){
-        var delta2 = addFavor(ownedRef2, 1);
-        if(delta2 > 0) gainText += '<br><span style="color:#4fc3f7">' + ownedRef2.name + ' 好感度 +' + delta2 + '（败北不减）</span>';
-      }
+      if(ownedRef2){ var delta2 = addFavor(ownedRef2, 1); if(delta2 > 0) gainText += '<br><span style="color:#4fc3f7">' + ownedRef2.name + ' 好感+' + delta2 + '</span>'; }
     }
   } else {
     var hxDelta = win ? 30 : -15;
     var yhDelta = win ? -15 : 20;
     state.leaderboard["华夏"] += hxDelta;
     state.leaderboard["樱花"] = Math.max(0, state.leaderboard["樱花"] + yhDelta);
-    gainText = win ? '<span class="win">国运昌隆！华夏 +30，樱花 -15</span>' : '<span class="lose">国运受挫！华夏 -15，樱花 +20</span>';
+    gainText = win ? '<span class="win">国运昌隆！华夏+30，樱花-15</span>' : '<span class="lose">国运受挫！华夏-15，樱花+20</span>';
     if(dc._myWu) addFavor(dc._myWu, win ? 2 : 1);
     if(dc._myMou) addFavor(dc._myMou, win ? 2 : 1);
   }
-  log.innerHTML += '<div class="rinfo">🏆 决斗结束：' + (win ? "我方获胜" : "我方战败") + '</div>';
+  log.innerHTML += '<div class="rinfo">🏆 决斗结束：' + (win ? "我方胜" : "我方败") + '</div>';
   document.getElementById("duelResultText").innerHTML = gainText;
   document.getElementById("duelCloseBtn").style.display = "inline-block";
   renderTop(); save();
-  addLog("【" + dc.title + "】" + dc.diffName + " → 我方" + dc.player.name + " vs 樱花" + dc.opp.name + " → " + (win ? "胜" : "负"));
   setTimeout(function(){ if(state.leaderboard["华夏"] < 0){ checkGameOver(); } }, 400);
 }
 
@@ -2166,12 +2236,11 @@ function openLeaderboard(){
     var warning = (pair[0] === "华夏" && pair[1] < 0) ? ' <span style="color:#e74c3c;font-size:11px">【危急】</span>' : '';
     html += '<div class="rank-row"><span>' + medal + ' <span style="color:' + color + ';font-weight:bold">' + pair[0] + '</span>' + warning + '</span><span class="rp">' + pair[1] + '</span></div>';
   });
-  html += '<p class="hint" style="margin-top:12px">国运之战胜利：华夏+30，樱花-15<br>国运之战失败：华夏-15，樱花+20<br><span style="color:#e74c3c">⚠️ 华夏国运跌至负数将触发抹除</span></p>';
   el.innerHTML = html;
   openModal("leaderboardModal");
 }
 
-/* 管理员 */
+/* ========== 管理员 ========== */
 function openAdmin(){
   if(state.admin){
     renderOwned(); renderAdminLog(); renderAdminNations(); renderAdminFavorList();
@@ -2189,69 +2258,56 @@ function adminLogin(){
     renderOwned(); renderAdminLog(); renderAdminNations(); renderAdminFavorList();
     renderAdminPoints(); renderAdminCredit();
     openModal("adminPanelModal");
-    addLog("管理员登录成功");
-  } else { alert("账号或密码错误！"); }
+    addLog("管理员登录");
+  } else alert("账号或密码错误！");
 }
-function addPoints(n){ state.points += n; renderTop(); renderAdminPoints(); save(); addLog("管理员增加积分 " + n); }
-function setPoints(n){ state.points = n; renderTop(); renderAdminPoints(); save(); addLog("管理员设置积分 " + n); }
+function addPoints(n){ state.points += n; renderTop(); renderAdminPoints(); save(); }
+function setPoints(n){ state.points = n; renderTop(); renderAdminPoints(); save(); }
 function clearLog(){ state.log = []; save(); renderAdminLog(); }
 function renderAdminLog(){
   var el = document.getElementById("adminLog");
-  if(!el) return;
-  el.innerHTML = state.log.map(function(x){ return "<div>" + x + "</div>"; }).join("");
+  if(el) el.innerHTML = state.log.map(function(x){ return "<div>" + x + "</div>"; }).join("");
 }
 function renderOwned(){
   var el = document.getElementById("ownedList");
   if(!el) return;
   if(state.owned.length === 0){ el.innerHTML = '<div style="color:#666">暂无收藏</div>'; return; }
   el.innerHTML = state.owned.map(function(o){
-    return "<div>" + o.dynasty + "_" + o.emperor + "_" + o.name + " [" + getCharTier(o.rank) + "] · " + o.label + o.value + " · 第" + o.rank + "名 · 好感" + (o.favor || 0) + "/" + FAVOR_MAX + "</div>";
+    return "<div>" + o.dynasty + "_" + o.emperor + "_" + o.name + " [" + getCharTier(o.rank) + "] · 好感" + (o.favor || 0) + "/" + FAVOR_MAX + "</div>";
   }).join("");
 }
-
-/* 自定义积分 */
 function renderAdminPoints(){
   var el = document.getElementById("adminPointsDisplay");
   if(el) el.textContent = state.points;
 }
 function adminAdjustPoints(sign){
   var amount = parseInt(document.getElementById("adminPointsInput").value);
-  if(isNaN(amount)){ alert("请输入数值"); return; }
-  if(amount <= 0){ alert("请输入正整数"); return; }
+  if(isNaN(amount) || amount <= 0){ alert("请输入正整数"); return; }
   state.points += sign * amount;
   renderTop(); renderAdminPoints(); save();
-  addLog("管理员调整积分：" + (sign > 0 ? "+" : "-") + amount + " → " + state.points);
 }
 function adminSetPointsCustom(val){
   var amount = (val !== undefined) ? parseInt(val) : parseInt(document.getElementById("adminPointsInput").value);
   if(isNaN(amount)){ alert("请输入数值"); return; }
   state.points = amount;
   renderTop(); renderAdminPoints(); save();
-  addLog("管理员设置积分：" + amount);
 }
-
-/* 信用调整 */
 function renderAdminCredit(){
   var el = document.getElementById("adminCreditDisplay");
   if(el) el.textContent = state.credit;
 }
 function adminAdjustCredit(sign){
   var amount = parseInt(document.getElementById("adminCreditInput").value);
-  if(isNaN(amount)){ alert("请输入数值"); return; }
-  if(amount <= 0){ alert("请输入正整数"); return; }
+  if(isNaN(amount) || amount <= 0){ alert("请输入正整数"); return; }
   state.credit = Math.max(0, Math.min(CREDIT_MAX, state.credit + sign * amount));
   renderAdminCredit(); save();
-  addLog("管理员调整信用：" + (sign > 0 ? "+" : "-") + amount + " → " + state.credit);
 }
 function adminSetCreditCustom(){
   var amount = parseInt(document.getElementById("adminCreditInput").value);
   if(isNaN(amount)){ alert("请输入数值"); return; }
   state.credit = Math.max(0, Math.min(CREDIT_MAX, amount));
   renderAdminCredit(); save();
-  addLog("管理员设置信用：" + state.credit);
 }
-
-/* 国运调整 */
 function renderAdminNations(){
   var listEl = document.getElementById("adminNationList");
   var selEl = document.getElementById("adminNationSelect");
@@ -2259,8 +2315,7 @@ function renderAdminNations(){
   var html = "", opts = "";
   Object.keys(state.leaderboard).forEach(function(name){
     var color = name === "华夏" ? "#2ecc71" : name === "樱花" ? "#ff9fbf" : "#f0c040";
-    html += '<div class="nation-row"><span class="nname" style="color:' + color + '">' + name + '</span>' +
-      '<span class="nval">' + state.leaderboard[name] + '</span></div>';
+    html += '<div class="nation-row"><span class="nname" style="color:' + color + '">' + name + '</span><span class="nval">' + state.leaderboard[name] + '</span></div>';
     opts += '<option value="' + name + '">' + name + '</option>';
   });
   listEl.innerHTML = html;
@@ -2272,44 +2327,32 @@ function adminAdjustNation(sign){
   var nation = document.getElementById("adminNationSelect").value;
   var amount = parseInt(document.getElementById("adminNationAmount").value);
   if(!amount || amount <= 0){ alert("请输入正整数"); return; }
-  if(state.leaderboard[nation] === undefined){ alert("该国家不存在"); return; }
   state.leaderboard[nation] += sign * amount;
   save(); renderAdminNations();
-  addLog("管理员调整国运：" + nation + " " + (sign > 0 ? "+" : "-") + amount + " → " + state.leaderboard[nation]);
   if(state.leaderboard["华夏"] < 0){ checkGameOver(); }
 }
 function adminAdjustNationQuick(nation, delta){
-  if(state.leaderboard[nation] === undefined){ alert("该国家不存在"); return; }
   state.leaderboard[nation] += delta;
   save(); renderAdminNations();
-  addLog("管理员快捷调整：" + nation + " " + (delta > 0 ? "+" : "") + delta + " → " + state.leaderboard[nation]);
   if(state.leaderboard["华夏"] < 0){ checkGameOver(); }
 }
 function adminSetNation(){
   var nation = document.getElementById("adminNationSelect").value;
   var amount = parseInt(document.getElementById("adminNationAmount").value);
-  if(isNaN(amount)){ alert("请输入数值（可为负）"); return; }
-  if(state.leaderboard[nation] === undefined){ alert("该国家不存在"); return; }
+  if(isNaN(amount)){ alert("请输入数值"); return; }
   state.leaderboard[nation] = amount;
   save(); renderAdminNations();
-  addLog("管理员设置国运：" + nation + " = " + amount);
   if(state.leaderboard["华夏"] < 0){ checkGameOver(); }
 }
-
-/* 好感度调整 */
 function renderAdminFavorList(){
   var selEl = document.getElementById("adminFavorCharSelect");
   if(!selEl) return;
   var prev = selEl.value;
   var html = "";
-  if(state.owned.length === 0){
-    html = '<option value="">— 暂无收藏名臣 —</option>';
-  } else {
-    state.owned.forEach(function(o, idx){
-      html += '<option value="' + idx + '">' + o.dynasty + '_' + o.emperor + '_' + o.name +
-        ' [' + getCharTier(o.rank) + '] · 好感' + (o.favor || 0) + '/' + FAVOR_MAX + '</option>';
-    });
-  }
+  if(state.owned.length === 0) html = '<option value="">— 无 —</option>';
+  else state.owned.forEach(function(o, idx){
+    html += '<option value="' + idx + '">' + o.dynasty + '_' + o.emperor + '_' + o.name + ' · 好感' + (o.favor || 0) + '/' + FAVOR_MAX + '</option>';
+  });
   selEl.innerHTML = html;
   if(prev !== "" && state.owned[prev]) selEl.value = prev;
 }
@@ -2319,56 +2362,39 @@ function adminAdjustFavor(sign){
   if(isNaN(idx) || !state.owned[idx]){ alert("请选择名臣"); return; }
   if(!amount || amount <= 0){ alert("请输入正整数"); return; }
   var item = state.owned[idx];
-  var before = item.favor || 0;
-  item.favor = Math.max(0, Math.min(FAVOR_MAX, before + sign * amount));
+  item.favor = Math.max(0, Math.min(FAVOR_MAX, (item.favor || 0) + sign * amount));
   save(); renderAdminFavorList(); renderOwned();
-  addLog("管理员调整好感：" + item.name + " " + (sign > 0 ? "+" : "-") + amount + " → " + item.favor + "/" + FAVOR_MAX);
 }
 function adminSetFavor(){
   var idx = parseInt(document.getElementById("adminFavorCharSelect").value);
   var amount = parseInt(document.getElementById("adminFavorAmount").value);
   if(isNaN(idx) || !state.owned[idx]){ alert("请选择名臣"); return; }
   if(isNaN(amount)){ alert("请输入数值"); return; }
-  var item = state.owned[idx];
-  item.favor = Math.max(0, Math.min(FAVOR_MAX, amount));
+  state.owned[idx].favor = Math.max(0, Math.min(FAVOR_MAX, amount));
   save(); renderAdminFavorList(); renderOwned();
-  addLog("管理员设置好感：" + item.name + " = " + item.favor + "/" + FAVOR_MAX);
 }
 function adminAdjustFavorQuick(delta){
-  if(state.owned.length === 0){ alert("暂无收藏名臣"); return; }
-  if(!confirm("确定对所有收藏名臣" + (delta > 0 ? "+" : "") + delta + "好感？")) return;
-  state.owned.forEach(function(o){
-    o.favor = Math.max(0, Math.min(FAVOR_MAX, (o.favor || 0) + delta));
-  });
+  if(state.owned.length === 0){ alert("暂无收藏"); return; }
+  if(!confirm("确定对全体" + (delta > 0 ? "+" : "") + delta + "好感？")) return;
+  state.owned.forEach(function(o){ o.favor = Math.max(0, Math.min(FAVOR_MAX, (o.favor || 0) + delta)); });
   save(); renderAdminFavorList(); renderOwned();
-  addLog("管理员快捷调整全体好感：" + (delta > 0 ? "+" : "") + delta);
 }
 function adminSetFavorAll(val){
-  if(state.owned.length === 0){ alert("暂无收藏名臣"); return; }
-  if(!confirm("确定将所有收藏名臣好感设为 " + val + "？")) return;
+  if(state.owned.length === 0){ alert("暂无收藏"); return; }
+  if(!confirm("确定全体设为 " + val + "？")) return;
   state.owned.forEach(function(o){ o.favor = val; });
   save(); renderAdminFavorList(); renderOwned();
-  addLog("管理员设置全体好感 = " + val);
 }
-
 function adminAddCharacter(){
   var boardKey = document.getElementById("adminCharBoard").value;
   var rank = parseInt(document.getElementById("adminCharRank").value);
-  if(!rank || rank < 1 || rank > 100){ alert("请输入1-100的排名"); return; }
+  if(!rank || rank < 1 || rank > 100){ alert("请输入1-100"); return; }
   var all = DATA_HX[boardKey] || [];
   var row = null;
   for(var i=0;i<all.length;i++){ if(all[i][0] === rank) row = all[i]; }
-  if(!row){ alert("当前榜单暂无第" + rank + "名数据"); return; }
-  if(isOwned(boardKey, row[0])){
-    addToken(row[3], row[1], row[2]);
-    addLog("管理员添加重复：" + row[3] + " → 信物×1");
-    alert("已拥有该名臣，获得信物×1！");
-  } else {
-    var item = buildOwnedItem(boardKey, row);
-    if(item) state.owned.push(item);
-    addLog("管理员添加：" + row[3] + "（第" + row[0] + "名）");
-    alert("已添加到收藏！");
-  }
+  if(!row){ alert("暂无第" + rank + "名数据"); return; }
+  if(isOwned(boardKey, row[0])){ addToken(row[3], row[1], row[2]); alert("已拥有，获得信物×1"); }
+  else { var item = buildOwnedItem(boardKey, row); if(item) state.owned.push(item); alert("已添加"); }
   save(); renderOwned(); renderAdminFavorList();
 }
 function adminAddItem(){
@@ -2377,9 +2403,7 @@ function adminAddItem(){
   var qty = parseInt(document.getElementById("adminItemQty").value);
   if(!qty || qty <= 0){ alert("数量需大于0"); return; }
   state.items[type][tier] = (state.items[type][tier] || 0) + qty;
-  save();
-  addLog("管理员添加道具：" + ITEM_DEFS[type].name + "(" + tier + ") ×" + qty + "，好感+" + FAVOR_GAIN[tier]);
-  alert("已添加 " + ITEM_DEFS[type].name + "(" + tier + ") ×" + qty + "\n每次赠送好感 +" + FAVOR_GAIN[tier]);
+  save(); alert("已添加 ×" + qty);
 }
 function adminAddToken(){
   var name = document.getElementById("adminTokenName").value.trim();
@@ -2388,15 +2412,12 @@ function adminAddToken(){
   if(!qty || qty <= 0){ alert("数量需大于0"); return; }
   var t = null;
   for(var i=0;i<state.tokens.length;i++){ if(state.tokens[i].name === name) t = state.tokens[i]; }
-  if(t){ t.count += qty; }
-  else { state.tokens.push({ name: name, dynasty: "?", emperor: "?", count: qty }); }
-  save();
-  addLog("管理员添加信物：" + name + " ×" + qty);
-  alert("已添加 " + name + "的信物 ×" + qty);
+  if(t) t.count += qty;
+  else state.tokens.push({ name: name, dynasty: "?", emperor: "?", count: qty });
+  save(); alert("已添加 ×" + qty);
 }
-
 function resetGame(){
-  if(!confirm("确定重置所有数据？\n（存档槽保留，可用读档恢复）")) return;
+  if(!confirm("确定重置？存档槽保留。")) return;
   localStorage.removeItem("guoyun_save");
   location.reload();
 }
@@ -2406,9 +2427,7 @@ try{
     document.getElementById("introOverlay").style.display = "none";
     document.getElementById("gameRoot").style.display = "block";
     renderTop();
-    if(state.leaderboard["华夏"] < 0){
-      setTimeout(function(){ openModal("gameOverModal"); }, 500);
-    }
+    if(state.leaderboard["华夏"] < 0) setTimeout(function(){ openModal("gameOverModal"); }, 500);
   } else {
     document.getElementById("introOverlay").style.display = "flex";
     document.getElementById("gameRoot").style.display = "none";
