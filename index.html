@@ -22,6 +22,8 @@ h1{text-align:center;color:#f0c040;letter-spacing:3px;margin-bottom:4px;font-siz
 .btn.green:hover{background:#2ecc71}
 .btn.blue{background:#2980b9}
 .btn.blue:hover{background:#3498db}
+.btn.purple{background:#8e44ad}
+.btn.purple:hover{background:#9b59b6}
 .btn.small{padding:5px 10px;font-size:12px}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .section-title{max-width:900px;margin:16px auto 10px;color:#f0c040;font-size:15px;letter-spacing:2px;text-align:center}
@@ -156,6 +158,7 @@ tr.owned .name{color:#2ecc71}
 .slot-info span{color:#4fc3f7}
 .slot-buttons{display:flex;gap:6px}
 .slot-buttons button{flex:1}
+.date-display{color:#f0c040;font-weight:bold;font-size:15px}
 </style>
 </head>
 <body>
@@ -178,12 +181,13 @@ tr.owned .name{color:#2ecc71}
 
 <div class="top">
   <div class="points">
+    <span class="date-display" id="dateDisplay">1年1月1日</span>　
     积分：<span id="points">100</span>　
-    体力：<span id="stamina">10</span>/10　
-    第 <span id="day">1</span> 天
+    体力：<span id="stamina">10</span>/10
   </div>
   <div>
     <button class="btn gold" onclick="openGift()">新手礼包</button>
+    <button class="btn purple" onclick="openLoanPanel()">🏦 贷款</button>
     <button class="btn green" onclick="openSavePanel()">💾 存档</button>
     <button class="btn" onclick="openAdmin()">管理员</button>
     <button class="btn red" onclick="resetGame()">重置</button>
@@ -208,6 +212,7 @@ tr.owned .name{color:#2ecc71}
 <div class="base-grid">
   <div class="base-card" onclick="openShop()"><h3>🏪 商店</h3><p>购买好感度道具</p></div>
   <div class="base-card" onclick="openJob()"><h3>💼 打工</h3><p>消耗体力赚取积分</p></div>
+  <div class="base-card" onclick="openLoanPanel()"><h3>🏦 神灵贷款</h3><p>提前借积分 · 到期还债</p></div>
 </div>
 
 <div class="bottom-buttons">
@@ -216,7 +221,9 @@ tr.owned .name{color:#2ecc71}
   <button class="btn" onclick="openMyCollection()">我的名臣</button>
   <button class="btn" onclick="openBackpack()">背包</button>
   <button class="btn" onclick="openLeaderboard()">排行榜</button>
-  <button class="btn" onclick="nextDay()">进入下一天</button>
+  <button class="btn blue" onclick="advanceDays(1)">进入下一天</button>
+  <button class="btn blue" onclick="advanceDays(7)">快进7天</button>
+  <button class="btn blue" onclick="advanceDays(30)">快进30天</button>
 </div>
 </div>
 
@@ -231,6 +238,21 @@ tr.owned .name{color:#2ecc71}
   <h3>🎁 新手礼包</h3>
   <p class="hint">随机获得一名华夏武将（21-40）和一名华夏谋士（21-40）</p>
   <div class="row"><button class="btn gold" onclick="claimGift()">开启礼包</button></div>
+</div></div>
+
+<!-- 神灵贷款 -->
+<div class="modal" id="loanModal"><div class="modal-box" style="max-width:660px">
+  <h3>🏦 神灵贷款</h3>
+  <p class="hint">向神灵提前借取积分，到期归还本息。<br>积分≤0 时每日违约，扣信用+罚金。</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    <div class="nation-row" style="margin:0"><span class="nname">信用分</span><span class="nval" id="loanCreditDisplay">600</span></div>
+    <div class="nation-row" style="margin:0"><span class="nname">可贷上限</span><span class="nval" id="loanMaxDisplay">6000</span></div>
+  </div>
+  <h4>申请贷款</h4>
+  <div id="loanOptions"></div>
+  <h4 style="margin-top:12px">活跃贷款</h4>
+  <div id="activeLoans"></div>
+  <div class="row" style="margin-top:10px"><button class="btn" onclick="closeModal('loanModal')">关闭</button></div>
 </div></div>
 
 <div class="modal" id="savePanelModal"><div class="modal-box" style="max-width:680px">
@@ -259,7 +281,31 @@ tr.owned .name{color:#2ecc71}
     <button class="btn small" onclick="clearLog()">清空日志</button>
     <button class="btn small" onclick="closeModal('adminPanelModal')">关闭</button>
   </div>
-
+  <div class="admin-section">
+    <h4>💰 自定义积分</h4>
+    <div class="nation-row"><span class="nname">当前积分</span><span class="nval" id="adminPointsDisplay">0</span></div>
+    <input id="adminPointsInput" type="number" value="0" placeholder="输入数值（可为负）">
+    <div class="adj-row">
+      <button class="btn green" onclick="adminAdjustPoints(1)">+ 积分</button>
+      <button class="btn red" onclick="adminAdjustPoints(-1)">− 积分</button>
+      <button class="btn gold" onclick="adminSetPointsCustom()">设为指定值</button>
+    </div>
+    <div class="adj-row">
+      <button class="btn small" onclick="adminSetPointsCustom(100)">设为 100</button>
+      <button class="btn small" onclick="adminSetPointsCustom(1000)">设为 1000</button>
+      <button class="btn small" onclick="adminSetPointsCustom(10000)">设为 10000</button>
+    </div>
+  </div>
+  <div class="admin-section">
+    <h4>💳 信用分调整</h4>
+    <div class="nation-row"><span class="nname">当前信用</span><span class="nval" id="adminCreditDisplay">600</span></div>
+    <input id="adminCreditInput" type="number" value="0" placeholder="输入数值">
+    <div class="adj-row">
+      <button class="btn green" onclick="adminAdjustCredit(1)">+ 信用</button>
+      <button class="btn red" onclick="adminAdjustCredit(-1)">− 信用</button>
+      <button class="btn gold" onclick="adminSetCreditCustom()">设为指定值</button>
+    </div>
+  </div>
   <div class="admin-section">
     <h4>🌏 国运值调整</h4>
     <div id="adminNationList"></div>
@@ -277,8 +323,6 @@ tr.owned .name{color:#2ecc71}
       <button class="btn small" onclick="adminAdjustNationQuick('樱花', -50)">樱花 -50</button>
     </div>
   </div>
-
-  <!-- ★ 好感度调整 ★ -->
   <div class="admin-section">
     <h4>❤️ 好感度调整</h4>
     <select id="adminFavorCharSelect"></select>
@@ -294,7 +338,6 @@ tr.owned .name{color:#2ecc71}
       <button class="btn small" onclick="adminSetFavorAll(200)">全体满好感</button>
     </div>
   </div>
-
   <h4 style="margin-top:12px">添加指定华夏名臣到收藏</h4>
   <select id="adminCharBoard">
     <option value="force">武力榜</option><option value="command">统率榜</option><option value="overall">综合榜</option>
@@ -302,7 +345,6 @@ tr.owned .name{color:#2ecc71}
   </select>
   <input id="adminCharRank" type="number" min="1" max="100" placeholder="输入排名（1-100）">
   <div class="row"><button class="btn gold" onclick="adminAddCharacter()">添加到收藏</button></div>
-
   <h4>添加道具（分等级）</h4>
   <select id="adminItemType">
     <option value="weapon">武器（武力）</option><option value="sandbox">沙盘（统率）</option>
@@ -313,12 +355,10 @@ tr.owned .name{color:#2ecc71}
   </select>
   <input id="adminItemQty" type="number" min="1" value="10" placeholder="数量">
   <div class="row"><button class="btn gold" onclick="adminAddItem()">添加道具</button></div>
-
   <h4>添加信物</h4>
   <input id="adminTokenName" placeholder="输入人名（如：秦琼）">
   <input id="adminTokenQty" type="number" min="1" value="10" placeholder="数量">
   <div class="row"><button class="btn gold" onclick="adminAddToken()">添加信物</button></div>
-
   <h4>当前收藏</h4>
   <div class="owned-list" id="ownedList"></div>
   <h4>操作日志</h4>
@@ -872,7 +912,6 @@ advOverall: [
 ]
 };
 
-
 var BOARDS = [
   { key:"force", title:"武力榜", label:"武力值", type:"武将" },
   { key:"command", title:"统率榜", label:"统率值", type:"武将" },
@@ -920,6 +959,17 @@ var SHOP_TIERS = {
   "S+": { price:200, gain:20 }
 };
 
+/* 神灵贷款配置 */
+var LOAN_AMOUNTS = [50, 500, 5000];
+var LOAN_TERMS = [3, 6, 9, 12];
+/* 总利息 = principal * 0.032 * months / 3 */
+var LOAN_INTEREST_RATE = 0.032 / 3; // 每月利息系数
+var CREDIT_START = 600;
+var CREDIT_PER_POINT = 10; // 1信用 = 10积分
+var CREDIT_MAX = 600;
+var DEFAULT_PENALTY_POINTS = 5; // 违约每日扣分
+var DEFAULT_PENALTY_CREDIT = 1; // 违约每日扣信用
+
 var TIER_ORDER = { "B":1, "A":2, "S":3, "S+":4 };
 function getCharTier(rank){
   if(rank <= 40) return "S+";
@@ -937,7 +987,7 @@ var JOBS = [
   { key:"council", name:"参加议会", cost:5, reward:50 }
 ];
 
-var SAVE_VERSION = 14;
+var SAVE_VERSION = 16;
 var SLOT_COUNT = 6;
 var AUTO_SLOT_KEY = "guoyun_slot_auto";
 var MANUAL_SLOT_PREFIX = "guoyun_slot_";
@@ -953,7 +1003,10 @@ function defaultItems(){
 function defaultState(){
   return {
     _v: SAVE_VERSION,
-    points: 100, stamina: 10, day: 1,
+    points: 100, stamina: 10,
+    dateY: 1, dateM: 1, dateD: 1,
+    credit: CREDIT_START,
+    loans: [],
     giftClaimed: false, introSeen: false,
     owned: [], tokens: [], items: defaultItems(),
     admin: false, log: [],
@@ -971,6 +1024,8 @@ var currentDrawBoard = "force";
 var currentRankBoard = "force";
 var currentBattleMode = "force";
 var autoBattleTimer = null;
+/* 贷款面板中的临时分期选择 */
+var loanTermSelection = { 50: 3, 500: 3, 5000: 3 };
 
 function save(){
   state._v = SAVE_VERSION;
@@ -991,7 +1046,11 @@ function load(){
 function mergeState(p){
   if(typeof p.points === "number") state.points = p.points;
   if(typeof p.stamina === "number") state.stamina = p.stamina;
-  if(typeof p.day === "number") state.day = p.day;
+  if(typeof p.dateY === "number") state.dateY = p.dateY;
+  if(typeof p.dateM === "number") state.dateM = p.dateM;
+  if(typeof p.dateD === "number") state.dateD = p.dateD;
+  if(typeof p.credit === "number") state.credit = p.credit;
+  if(Array.isArray(p.loans)) state.loans = p.loans;
   if(typeof p.giftClaimed === "boolean") state.giftClaimed = p.giftClaimed;
   if(typeof p.introSeen === "boolean") state.introSeen = p.introSeen;
   if(typeof p.admin === "boolean") state.admin = p.admin;
@@ -1026,10 +1085,204 @@ function openModal(id){ var el = document.getElementById(id); if(el) el.classLis
 function renderTop(){
   document.getElementById("points").textContent = state.points;
   document.getElementById("stamina").textContent = state.stamina;
-  document.getElementById("day").textContent = state.day;
+  document.getElementById("dateDisplay").textContent = formatGameDate();
 }
 
-/* 存档系统 */
+/* ============================================================
+   日历系统
+   ============================================================ */
+function isLeapYear(y){
+  return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+}
+function daysInMonth(y, m){
+  var days = [31,28,31,30,31,30,31,31,30,31,30,31];
+  if(m === 2 && isLeapYear(y)) return 29;
+  return days[m-1];
+}
+function formatGameDate(){
+  return state.dateY + "年" + state.dateM + "月" + state.dateD + "日";
+}
+function dateCompare(a, b){
+  if(a.y !== b.y) return a.y - b.y;
+  if(a.m !== b.m) return a.m - b.m;
+  return a.d - b.d;
+}
+function addMonths(date, months){
+  var y = date.y, m = date.m, d = date.d;
+  m += months;
+  while(m > 12){ m -= 12; y++; }
+  var dim = daysInMonth(y, m);
+  if(d > dim) d = dim;
+  return { y: y, m: m, d: d };
+}
+function advanceDays(n){
+  var events = [];
+  for(var i=0; i<n; i++){
+    state.dateD++;
+    if(state.dateD > daysInMonth(state.dateY, state.dateM)){
+      state.dateD = 1;
+      state.dateM++;
+      if(state.dateM > 12){
+        state.dateM = 1;
+        state.dateY++;
+      }
+    }
+    // 处理贷款
+    var today = { y: state.dateY, m: state.dateM, d: state.dateD };
+    var hasActive = false;
+    state.loans.forEach(function(loan){
+      if(loan.completed) return;
+      hasActive = true;
+      if(dateCompare(today, loan.nextDue) >= 0){
+        state.points -= loan.monthlyPayment;
+        loan.paidMonths++;
+        events.push("贷款还款 -" + loan.monthlyPayment + " 积分（" + loan.paidMonths + "/" + loan.months + "）");
+        if(loan.paidMonths >= loan.months){
+          loan.completed = true;
+          state.credit = Math.min(CREDIT_MAX, state.credit + 50);
+          events.push("✅ 贷款还清！信用 +50");
+        } else {
+          loan.nextDue = addMonths(loan.nextDue, 1);
+        }
+      }
+    });
+    // 违约判定：积分≤0且还有活跃贷款
+    if(hasActive && state.points <= 0){
+      state.credit = Math.max(0, state.credit - DEFAULT_PENALTY_CREDIT);
+      state.points -= DEFAULT_PENALTY_POINTS;
+      events.push("⚠️ 违约！-" + DEFAULT_PENALTY_POINTS + "积分，-" + DEFAULT_PENALTY_CREDIT + "信用");
+    }
+  }
+  renderTop();
+  autoSave();
+  save();
+  if(events.length > 0){
+    addLog("推进" + n + "天：" + events.join("；"));
+    // 只弹一次汇总
+    setTimeout(function(){
+      alert("📅 " + formatGameDate() + "\n\n" + events.join("\n"));
+    }, 50);
+  }
+}
+
+/* ============================================================
+   神灵贷款
+   ============================================================ */
+function calcLoanInfo(principal, months){
+  var totalReturn = Math.round(principal * (1 + LOAN_INTEREST_RATE * months));
+  var monthlyPayment = Math.round(totalReturn / months);
+  var totalActual = monthlyPayment * months;
+  var interest = totalActual - principal;
+  return { totalReturn: totalActual, monthlyPayment: monthlyPayment, interest: interest };
+}
+
+function openLoanPanel(){
+  renderLoanPanel();
+  openModal("loanModal");
+}
+function renderLoanPanel(){
+  var creditEl = document.getElementById("loanCreditDisplay");
+  var maxEl = document.getElementById("loanMaxDisplay");
+  if(creditEl) creditEl.textContent = state.credit;
+  if(maxEl) maxEl.textContent = state.credit * CREDIT_PER_POINT;
+  renderLoanOptions();
+  renderActiveLoans();
+}
+function renderLoanOptions(){
+  var el = document.getElementById("loanOptions");
+  var html = "";
+  LOAN_AMOUNTS.forEach(function(principal){
+    var canBorrow = state.credit * CREDIT_PER_POINT >= principal;
+    var borderColor = canBorrow ? "#0f3460" : "#c0392b";
+    html += '<div style="background:#1a1a2e;border:1px solid ' + borderColor + ';border-radius:8px;padding:10px;margin-bottom:8px' + (canBorrow ? '' : ';opacity:0.55') + '">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+    html += '<span style="color:#f0c040;font-weight:bold;font-size:14px">贷款 ' + principal + ' 积分</span>';
+    if(!canBorrow){
+      html += '<span style="color:#e74c3c;font-size:11px">信用不足（需 ' + (principal / CREDIT_PER_POINT) + ' 信用）</span>';
+    }
+    html += '</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">';
+    LOAN_TERMS.forEach(function(months){
+      var info = calcLoanInfo(principal, months);
+      var selected = loanTermSelection[principal] === months;
+      var btnClass = canBorrow ? (selected ? "gold" : "") : "";
+      var disabled = canBorrow ? "" : "disabled";
+      html += '<button class="btn small ' + btnClass + '" ' + disabled +
+        ' onclick="selectLoanTerm(' + principal + ',' + months + ')" ' +
+        'style="display:flex;flex-direction:column;align-items:center;padding:6px 3px;line-height:1.4">' +
+        '<span>' + months + '月</span>' +
+        '<span style="font-size:10px">月供' + info.monthlyPayment + '</span>' +
+        '<span style="font-size:9px;color:' + (selected ? '#1a1a2e' : '#888') + '">利息+' + info.interest + '</span>' +
+        '</button>';
+    });
+    html += '</div>';
+    if(canBorrow){
+      var info = calcLoanInfo(principal, loanTermSelection[principal]);
+      html += '<div style="margin-top:8px;text-align:center">';
+      html += '<button class="btn gold" style="width:100%" onclick="confirmTakeLoan(' + principal + ')">' +
+        '借 ' + principal + ' 积分 · ' + loanTermSelection[principal] + '个月 · 每月还 ' + info.monthlyPayment + '（总还 ' + info.totalReturn + '）' +
+        '</button>';
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+function selectLoanTerm(principal, months){
+  loanTermSelection[principal] = months;
+  renderLoanOptions();
+}
+function confirmTakeLoan(principal){
+  var months = loanTermSelection[principal];
+  if(state.credit * CREDIT_PER_POINT < principal){
+    alert("信用不足！");
+    return;
+  }
+  var info = calcLoanInfo(principal, months);
+  if(!confirm("确认借款 " + principal + " 积分？\n\n分期：" + months + "个月\n每月还款：" + info.monthlyPayment + " 积分\n总还款：" + info.totalReturn + " 积分\n利息：" + info.interest + " 积分\n\n首次还款日期：" + (function(){
+    var d = addMonths({ y: state.dateY, m: state.dateM, d: state.dateD }, 1);
+    return d.y + "年" + d.m + "月" + d.d + "日";
+  })())) return;
+  var today = { y: state.dateY, m: state.dateM, d: state.dateD };
+  var nextDue = addMonths(today, 1);
+  state.loans.push({
+    principal: principal,
+    months: months,
+    monthlyPayment: info.monthlyPayment,
+    totalReturn: info.totalReturn,
+    paidMonths: 0,
+    nextDue: nextDue,
+    completed: false
+  });
+  state.points += principal;
+  renderTop(); save();
+  addLog("💰 贷款：" + principal + "积分，" + months + "个月，月供" + info.monthlyPayment);
+  renderLoanPanel();
+  alert("✅ 借款成功！+" + principal + " 积分\n首次还款：" + nextDue.y + "年" + nextDue.m + "月" + nextDue.d + "日，金额 " + info.monthlyPayment);
+}
+function renderActiveLoans(){
+  var el = document.getElementById("activeLoans");
+  var active = state.loans.filter(function(l){ return !l.completed; });
+  if(active.length === 0){
+    el.innerHTML = '<div style="color:#888;text-align:center;padding:10px;font-size:12px">暂无活跃贷款</div>';
+    return;
+  }
+  var html = "";
+  active.forEach(function(loan){
+    var remaining = loan.months - loan.paidMonths;
+    var remainAmount = loan.monthlyPayment * remaining;
+    html += '<div style="background:#1a1a2e;border:1px solid #f0c040;border-radius:8px;padding:10px;margin-bottom:6px">' +
+      '<div style="color:#fff;font-weight:bold">本金 ' + loan.principal + ' · ' + loan.months + '个月 · 月供' + loan.monthlyPayment + '</div>' +
+      '<div style="color:#888;font-size:11px;margin-top:4px">已还 ' + loan.paidMonths + '/' + loan.months + ' 期 · 剩余 ' + remainAmount + ' 积分</div>' +
+      '<div style="color:#f0c040;font-size:11px;margin-top:2px">下次还款：' + loan.nextDue.y + '年' + loan.nextDue.m + '月' + loan.nextDue.d + '日</div>' +
+      '</div>';
+  });
+  el.innerHTML = html;
+}
+
+/* ============================================================
+   存档系统
+   ============================================================ */
 function saveToSlot(key){
   try{
     var data = JSON.parse(JSON.stringify(state));
@@ -1067,14 +1320,10 @@ function renderSlotCard(key, title, data, isAuto){
   var titleClass = isAuto ? " auto-title" : "";
   if(!data){
     return '<div class="slot-card empty' + isAutoClass + '">' +
-      '<div class="slot-header">' +
-      '<span class="slot-title' + titleClass + '">' + title + (isAuto ? '<span class="slot-tag">每日自动</span>' : '') + '</span>' +
-      '</div>' +
+      '<div class="slot-header"><span class="slot-title' + titleClass + '">' + title + (isAuto ? '<span class="slot-tag">每日自动</span>' : '') + '</span></div>' +
       '<div class="slot-info">— 空槽位 —</div>' +
       '<div class="slot-buttons">' +
-      (isAuto
-        ? '<button class="btn small gold" onclick="doSaveSlot(\'' + key + '\')">立即存入</button>'
-        : '<button class="btn small gold" onclick="doSaveSlot(\'' + key + '\')">存入</button>') +
+      (isAuto ? '<button class="btn small gold" onclick="doSaveSlot(\'' + key + '\')">立即存入</button>' : '<button class="btn small gold" onclick="doSaveSlot(\'' + key + '\')">存入</button>') +
       '<button class="btn small" disabled>读取</button>' +
       '<button class="btn small red" disabled>删除</button>' +
       '</div></div>';
@@ -1082,18 +1331,20 @@ function renderSlotCard(key, title, data, isAuto){
   var t = data._saveTime ? new Date(data._saveTime).toLocaleString() : "未知时间";
   var hxVal = (data.leaderboard && data.leaderboard["华夏"]) !== undefined ? data.leaderboard["华夏"] : "?";
   var yhVal = (data.leaderboard && data.leaderboard["樱花"]) !== undefined ? data.leaderboard["樱花"] : "?";
+  var dateStr = (data.dateY || 1) + "年" + (data.dateM || 1) + "月" + (data.dateD || 1) + "日";
   return '<div class="slot-card' + isAutoClass + '">' +
     '<div class="slot-header">' +
     '<span class="slot-title' + titleClass + '">' + title + (isAuto ? '<span class="slot-tag">每日自动</span>' : '') + '</span>' +
     '<span style="color:#888;font-size:11px">' + t + '</span>' +
     '</div>' +
     '<div class="slot-info">' +
-    '第 <span>' + data.day + '</span> 天　' +
+    '日期 <span>' + dateStr + '</span>　' +
     '积分 <span>' + data.points + '</span>　' +
     '体力 <span>' + data.stamina + '/10</span><br>' +
+    '信用 <span>' + (data.credit || 600) + '</span>　' +
     '华夏国运 <span>' + hxVal + '</span>　樱花国运 <span>' + yhVal + '</span><br>' +
     '收藏名臣 <span>' + (data.owned ? data.owned.length : 0) + '</span> 名　' +
-    '信物 <span>' + (data.tokens ? data.tokens.length : 0) + '</span> 种' +
+    '活跃贷款 <span>' + (data.loans ? data.loans.filter(function(l){ return !l.completed; }).length : 0) + '</span> 笔' +
     '</div>' +
     '<div class="slot-buttons">' +
     '<button class="btn small gold" onclick="doSaveSlot(\'' + key + '\')">' + (isAuto ? '立即存入' : '覆盖存档') + '</button>' +
@@ -1118,7 +1369,7 @@ function doSaveSlot(key){
 function doLoadSlot(key){
   var data = readSlot(key);
   if(!data){ alert("该槽位没有有效存档！"); return; }
-  if(!confirm("确定读取该存档？\n\n第 " + data.day + " 天\n积分：" + data.points + "\n华夏国运：" + (data.leaderboard ? data.leaderboard["华夏"] : "?") + "\n\n当前进度将被覆盖。")) return;
+  if(!confirm("确定读取该存档？\n\n日期：" + (data.dateY||1) + "年" + (data.dateM||1) + "月" + (data.dateD||1) + "日\n积分：" + data.points + "\n华夏国运：" + (data.leaderboard ? data.leaderboard["华夏"] : "?") + "\n\n当前进度将被覆盖。")) return;
   state = defaultState();
   mergeState(data);
   renderTop(); save();
@@ -1189,7 +1440,7 @@ function checkGameOver(){
     save();
     if(autoBattleTimer){ clearTimeout(autoBattleTimer); autoBattleTimer = null; }
     closeModal("duelModal"); closeModal("leaderboardModal"); closeModal("resultModal");
-    closeModal("adminPanelModal"); closeModal("savePanelModal");
+    closeModal("adminPanelModal"); closeModal("savePanelModal"); closeModal("loanModal");
     setTimeout(function(){ openModal("gameOverModal"); }, 200);
     return true;
   }
@@ -1360,7 +1611,7 @@ function confirmGive(){
     showResult("🎁 赠送成功",
       '<div class="result-card"><div class="r">' + item.name + '</div>' +
       '<div class="v">好感度：' + item.favor + ' / ' + FAVOR_MAX + '</div>' +
-      '<div class="v">本次增加：+' + actual + '（每件 +' + perItem + ' × ' + qty2 + '）</div>' +
+      '<div class="v">本次增加：+' + actual + '</div>' +
       '<div class="v">当前加成：+' + calcFavorBonus(item.favor) + '</div></div>',
       '<span class="win">好感度提升！</span>');
   }
@@ -1423,17 +1674,6 @@ function doJob(key){
   addLog("打工【" + j.name + "】消耗" + j.cost + "体力 → +" + j.reward + "积分");
   renderJob();
   alert("打工完成！+" + j.reward + "积分，剩余体力：" + state.stamina);
-}
-
-function nextDay(){
-  if(!confirm("确定进入下一天？体力将重置为10。\n\n（进入新一天将自动覆盖自动存档）")) return;
-  state.day += 1;
-  state.stamina = 10;
-  renderTop();
-  autoSave();
-  save();
-  addLog("进入第 " + state.day + " 天，已自动存档");
-  alert("进入第 " + state.day + " 天，体力已重置为 10\n\n✅ 已自动存档到自动槽");
 }
 
 function showResult(title, areaHtml, textHtml){
@@ -1933,7 +2173,11 @@ function openLeaderboard(){
 
 /* 管理员 */
 function openAdmin(){
-  if(state.admin){ renderOwned(); renderAdminLog(); renderAdminNations(); renderAdminFavorList(); openModal("adminPanelModal"); return; }
+  if(state.admin){
+    renderOwned(); renderAdminLog(); renderAdminNations(); renderAdminFavorList();
+    renderAdminPoints(); renderAdminCredit();
+    openModal("adminPanelModal"); return;
+  }
   openModal("adminLoginModal");
 }
 function adminLogin(){
@@ -1943,12 +2187,13 @@ function adminLogin(){
     state.admin = true; save();
     closeModal("adminLoginModal");
     renderOwned(); renderAdminLog(); renderAdminNations(); renderAdminFavorList();
+    renderAdminPoints(); renderAdminCredit();
     openModal("adminPanelModal");
     addLog("管理员登录成功");
   } else { alert("账号或密码错误！"); }
 }
-function addPoints(n){ state.points += n; renderTop(); save(); addLog("管理员增加积分 " + n); }
-function setPoints(n){ state.points = n; renderTop(); save(); addLog("管理员设置积分 " + n); }
+function addPoints(n){ state.points += n; renderTop(); renderAdminPoints(); save(); addLog("管理员增加积分 " + n); }
+function setPoints(n){ state.points = n; renderTop(); renderAdminPoints(); save(); addLog("管理员设置积分 " + n); }
 function clearLog(){ state.log = []; save(); renderAdminLog(); }
 function renderAdminLog(){
   var el = document.getElementById("adminLog");
@@ -1964,7 +2209,49 @@ function renderOwned(){
   }).join("");
 }
 
-/* ★ 国运调整 ★ */
+/* 自定义积分 */
+function renderAdminPoints(){
+  var el = document.getElementById("adminPointsDisplay");
+  if(el) el.textContent = state.points;
+}
+function adminAdjustPoints(sign){
+  var amount = parseInt(document.getElementById("adminPointsInput").value);
+  if(isNaN(amount)){ alert("请输入数值"); return; }
+  if(amount <= 0){ alert("请输入正整数"); return; }
+  state.points += sign * amount;
+  renderTop(); renderAdminPoints(); save();
+  addLog("管理员调整积分：" + (sign > 0 ? "+" : "-") + amount + " → " + state.points);
+}
+function adminSetPointsCustom(val){
+  var amount = (val !== undefined) ? parseInt(val) : parseInt(document.getElementById("adminPointsInput").value);
+  if(isNaN(amount)){ alert("请输入数值"); return; }
+  state.points = amount;
+  renderTop(); renderAdminPoints(); save();
+  addLog("管理员设置积分：" + amount);
+}
+
+/* 信用调整 */
+function renderAdminCredit(){
+  var el = document.getElementById("adminCreditDisplay");
+  if(el) el.textContent = state.credit;
+}
+function adminAdjustCredit(sign){
+  var amount = parseInt(document.getElementById("adminCreditInput").value);
+  if(isNaN(amount)){ alert("请输入数值"); return; }
+  if(amount <= 0){ alert("请输入正整数"); return; }
+  state.credit = Math.max(0, Math.min(CREDIT_MAX, state.credit + sign * amount));
+  renderAdminCredit(); save();
+  addLog("管理员调整信用：" + (sign > 0 ? "+" : "-") + amount + " → " + state.credit);
+}
+function adminSetCreditCustom(){
+  var amount = parseInt(document.getElementById("adminCreditInput").value);
+  if(isNaN(amount)){ alert("请输入数值"); return; }
+  state.credit = Math.max(0, Math.min(CREDIT_MAX, amount));
+  renderAdminCredit(); save();
+  addLog("管理员设置信用：" + state.credit);
+}
+
+/* 国运调整 */
 function renderAdminNations(){
   var listEl = document.getElementById("adminNationList");
   var selEl = document.getElementById("adminNationSelect");
@@ -2009,7 +2296,7 @@ function adminSetNation(){
   if(state.leaderboard["华夏"] < 0){ checkGameOver(); }
 }
 
-/* ★ 好感度调整 ★ */
+/* 好感度调整 */
 function renderAdminFavorList(){
   var selEl = document.getElementById("adminFavorCharSelect");
   if(!selEl) return;
@@ -2064,7 +2351,6 @@ function adminSetFavorAll(val){
   addLog("管理员设置全体好感 = " + val);
 }
 
-/* 其他管理员功能 */
 function adminAddCharacter(){
   var boardKey = document.getElementById("adminCharBoard").value;
   var rank = parseInt(document.getElementById("adminCharRank").value);
