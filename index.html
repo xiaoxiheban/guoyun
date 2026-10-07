@@ -5,166 +5,190 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>国运擂台</title>
 <style>
+:root{
+  --bg-main:#faf7f0;
+  --bg-card:#ffffff;
+  --bg-panel:#fffdf7;
+  --gold-primary:#c9a961;
+  --gold-bright:#d4af37;
+  --gold-deep:#8b6914;
+  --gold-light:#f0e4c8;
+  --border-gold:#e8d9b8;
+  --text-primary:#3a2f1f;
+  --text-secondary:#6b5d48;
+  --text-muted:#9b8b6f;
+  --shadow-soft:0 4px 16px rgba(201,169,97,0.18);
+  --shadow-glow:0 0 24px rgba(212,175,55,0.35);
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"Microsoft YaHei",sans-serif;background:#1a1a2e;color:#e8e8e8;padding:14px;min-height:100vh}
-h1{text-align:center;color:#f0c040;letter-spacing:3px;margin-bottom:4px;font-size:22px}
-.sub{text-align:center;color:#888;font-size:12px;margin-bottom:16px}
-.top{display:flex;justify-content:space-between;align-items:center;max-width:900px;margin:0 auto 14px;background:#16213e;padding:10px 14px;border-radius:8px;border:1px solid #0f3460;flex-wrap:wrap;gap:8px}
-.points{color:#f0c040;font-size:15px;font-weight:bold;line-height:1.6}
-.points span{color:#4fc3f7}
-.btn{background:#0f3460;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;margin-left:4px}
-.btn:hover{background:#1a4a7a}
-.btn.gold{background:#f0c040;color:#1a1a2e;font-weight:bold}
-.btn.gold:hover{background:#ffd966}
-.btn.red{background:#c0392b}
-.btn.red:hover{background:#e74c3c}
-.btn.green{background:#27ae60}
-.btn.green:hover{background:#2ecc71}
-.btn.blue{background:#2980b9}
-.btn.blue:hover{background:#3498db}
-.btn.purple{background:#8e44ad}
-.btn.purple:hover{background:#9b59b6}
+body{font-family:"Noto Serif SC","Songti SC","Microsoft YaHei",Georgia,serif;background:radial-gradient(ellipse at top,#fffdf7 0%,#faf7f0 45%,#f0e8d8 100%);background-attachment:fixed;color:var(--text-primary);padding:14px;min-height:100vh}
+h1{text-align:center;color:var(--gold-deep);letter-spacing:6px;margin-bottom:4px;font-size:26px;font-weight:bold;text-shadow:0 1px 2px rgba(201,169,97,0.3),0 0 20px rgba(212,175,55,0.25)}
+.sub{text-align:center;color:var(--text-muted);font-size:12px;margin-bottom:16px;letter-spacing:2px}
+.top{display:flex;justify-content:space-between;align-items:center;max-width:900px;margin:0 auto 14px;background:linear-gradient(135deg,#ffffff 0%,#fffdf5 100%);padding:12px 16px;border-radius:10px;border:1px solid var(--border-gold);box-shadow:var(--shadow-soft);flex-wrap:wrap;gap:8px}
+.points{color:var(--gold-deep);font-size:14px;font-weight:bold;line-height:1.6}
+.points span{color:var(--gold-primary)}
+.btn{background:linear-gradient(135deg,#ffffff,#fdf8eb);color:var(--gold-deep);border:1px solid var(--border-gold);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;margin-left:4px;font-family:inherit;transition:.2s;box-shadow:0 1px 3px rgba(201,169,97,0.15)}
+.btn:hover{background:linear-gradient(135deg,#fff8e6,#f5ecd5);border-color:var(--gold-primary);box-shadow:0 2px 6px rgba(201,169,97,0.3)}
+.btn.gold{background:linear-gradient(135deg,#f0d97a 0%,#c9a961 50%,#d4af37 100%);color:#fff;font-weight:bold;border:none;text-shadow:0 1px 2px rgba(139,105,20,0.5);box-shadow:0 2px 8px rgba(201,169,97,0.4)}
+.btn.gold:hover{background:linear-gradient(135deg,#f5e28a 0%,#d4b56b 50%,#e0bd47 100%);box-shadow:0 3px 12px rgba(201,169,97,0.55)}
+.btn.red{background:linear-gradient(135deg,#e8a5a0,#c0392b);color:#fff;border:none;font-weight:bold}
+.btn.red:hover{background:linear-gradient(135deg,#eea8a2,#d4463a)}
+.btn.green{background:linear-gradient(135deg,#a8d8a0,#27ae60);color:#fff;border:none;font-weight:bold}
+.btn.green:hover{background:linear-gradient(135deg,#b5dea8,#2ecc71)}
+.btn.blue{background:linear-gradient(135deg,#a8c8e8,#2980b9);color:#fff;border:none;font-weight:bold}
+.btn.blue:hover{background:linear-gradient(135deg,#b5d4ee,#3498db)}
+.btn.purple{background:linear-gradient(135deg,#c8a8d8,#8e44ad);color:#fff;border:none;font-weight:bold}
+.btn.purple:hover{background:linear-gradient(135deg,#d4b5e2,#9b59b6)}
 .btn.small{padding:5px 10px;font-size:12px}
 .btn:disabled{opacity:.4;cursor:not-allowed}
-.section-title{max-width:900px;margin:16px auto 10px;color:#f0c040;font-size:15px;letter-spacing:2px;text-align:center}
+.section-title{max-width:900px;margin:20px auto 10px;color:var(--gold-deep);font-size:15px;letter-spacing:4px;text-align:center;font-weight:bold}
+.section-title::before,.section-title::after{content:"◆";color:var(--gold-light);margin:0 10px;font-size:10px;vertical-align:middle}
 .mode-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;max-width:900px;margin:0 auto}
-.mode-card{background:#16213e;border:1px solid #0f3460;border-radius:10px;padding:18px;text-align:center;cursor:pointer;transition:.2s;position:relative}
-.mode-card:hover{background:#1f2b4a;border-color:#f0c040;transform:translateY(-2px)}
-.mode-card h3{color:#f0c040;font-size:17px;margin-bottom:6px}
-.mode-card p{color:#888;font-size:12px}
-.mode-card .badge{position:absolute;top:8px;right:8px;background:#0f3460;color:#4fc3f7;font-size:10px;padding:3px 8px;border-radius:10px}
-.main-quest{max-width:900px;margin:14px auto 0;background:linear-gradient(135deg,#3a1a1a,#16213e);border:2px solid #f0c040;border-radius:10px;padding:22px;text-align:center;cursor:pointer;transition:.2s}
-.main-quest:hover{transform:translateY(-2px)}
-.main-quest h3{color:#f0c040;font-size:20px;margin-bottom:6px;letter-spacing:3px}
-.main-quest p{color:#ccc;font-size:13px}
-.bottom-buttons{max-width:900px;margin:18px auto 0;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
-.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.78);justify-content:center;align-items:center;z-index:100;padding:14px}
+.mode-card{background:linear-gradient(135deg,#ffffff 0%,#fffcf4 100%);border:1px solid var(--border-gold);border-radius:10px;padding:18px;text-align:center;cursor:pointer;transition:.2s;position:relative;box-shadow:var(--shadow-soft)}
+.mode-card:hover{background:linear-gradient(135deg,#fff8e6,#f5ecd5);border-color:var(--gold-primary);transform:translateY(-2px);box-shadow:0 6px 20px rgba(201,169,97,0.3)}
+.mode-card h3{color:var(--gold-deep);font-size:17px;margin-bottom:6px;letter-spacing:2px}
+.mode-card p{color:var(--text-muted);font-size:12px}
+.mode-card .badge{position:absolute;top:8px;right:8px;background:linear-gradient(135deg,#f0d97a,#c9a961);color:#fff;font-size:10px;padding:3px 8px;border-radius:10px;font-weight:bold;box-shadow:0 1px 4px rgba(201,169,97,0.4)}
+.main-quest{max-width:900px;margin:14px auto 0;background:linear-gradient(135deg,#fffbe8 0%,#f5ecd5 50%,#fff8e6 100%);border:2px solid var(--gold-primary);border-radius:12px;padding:22px;text-align:center;cursor:pointer;transition:.2s;box-shadow:0 4px 20px rgba(201,169,97,0.25),inset 0 0 30px rgba(240,217,122,0.15)}
+.main-quest:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(201,169,97,0.4),inset 0 0 40px rgba(240,217,122,0.25)}
+.main-quest h3{color:var(--gold-deep);font-size:20px;margin-bottom:6px;letter-spacing:4px;text-shadow:0 1px 2px rgba(240,217,122,0.6)}
+.main-quest p{color:var(--text-secondary);font-size:13px}
+.bottom-buttons{max-width:900px;margin:20px auto 0;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(120,100,60,.45);backdrop-filter:blur(4px);justify-content:center;align-items:center;z-index:100;padding:14px}
 .modal.show{display:flex}
-.modal-box{background:#16213e;border:1px solid #0f3460;border-radius:10px;padding:18px;max-width:640px;width:100%;max-height:92vh;overflow-y:auto}
-.modal-box h3{color:#f0c040;margin-bottom:12px;text-align:center;font-size:17px}
-.modal-box h4{color:#f0c040;font-size:13px;margin:10px 0 6px}
-.modal-box input,.modal-box select{width:100%;padding:9px;margin-bottom:8px;border-radius:6px;border:1px solid #0f3460;background:#1a1a2e;color:#fff;font-size:14px}
+.modal-box{background:linear-gradient(135deg,#ffffff 0%,#fffcf5 100%);border:2px solid var(--gold-light);border-radius:12px;padding:20px;max-width:640px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 8px 40px rgba(201,169,97,0.35),0 0 60px rgba(240,217,122,0.2)}
+.modal-box h3{color:var(--gold-deep);margin-bottom:14px;text-align:center;font-size:18px;letter-spacing:3px;font-weight:bold}
+.modal-box h4{color:var(--gold-deep);font-size:13px;margin:10px 0 6px;font-weight:bold}
+.modal-box input,.modal-box select{width:100%;padding:9px;margin-bottom:8px;border-radius:6px;border:1px solid var(--border-gold);background:#fffdf8;color:var(--text-primary);font-size:14px;font-family:inherit}
+.modal-box input:focus,.modal-box select:focus{outline:none;border-color:var(--gold-primary);box-shadow:0 0 8px rgba(201,169,97,0.3)}
 .modal-box .row{display:flex;gap:8px;margin-top:8px}
 .modal-box .row button{flex:1}
 .tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin-bottom:12px}
-.tabs button{background:#1a1a2e;color:#ccc;border:1px solid #0f3460;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px}
-.tabs button.active{background:#f0c040;color:#1a1a2e;border-color:#f0c040;font-weight:bold}
-table{width:100%;border-collapse:collapse;background:#1a1a2e;border-radius:6px;overflow:hidden}
-th{background:#0f3460;color:#f0c040;padding:7px;font-size:11px}
-td{padding:6px 4px;text-align:center;font-size:11px;border-bottom:1px solid #1f2b4a}
-tr:hover td{background:#1f2b4a}
-tr.owned td{background:rgba(46,204,113,.15)}
-tr.owned .name{color:#2ecc71}
-.owned-tag{display:inline-block;background:#2ecc71;color:#fff;font-size:9px;padding:1px 5px;border-radius:6px;margin-left:4px}
-.rank{color:#f0c040;font-weight:bold}
-.name{color:#fff;font-weight:bold}
-.score{color:#4fc3f7;font-weight:bold}
+.tabs button{background:#fffdf8;color:var(--text-secondary);border:1px solid var(--border-gold);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;transition:.2s}
+.tabs button.active{background:linear-gradient(135deg,#f0d97a,#c9a961);color:#fff;border-color:var(--gold-primary);font-weight:bold;text-shadow:0 1px 1px rgba(139,105,20,0.4);box-shadow:0 2px 6px rgba(201,169,97,0.35)}
+table{width:100%;border-collapse:collapse;background:#fffdf8;border-radius:6px;overflow:hidden}
+th{background:linear-gradient(135deg,#f5ecd5,#e8d9b8);color:var(--gold-deep);padding:8px;font-size:11px;font-weight:bold;letter-spacing:1px}
+td{padding:6px 4px;text-align:center;font-size:11px;border-bottom:1px solid var(--gold-light);color:var(--text-secondary)}
+tr:hover td{background:#fff8e6}
+tr.owned td{background:rgba(240,217,122,0.15)}
+tr.owned .name{color:var(--gold-deep);font-weight:bold}
+.owned-tag{display:inline-block;background:linear-gradient(135deg,#f0d97a,#c9a961);color:#fff;font-size:9px;padding:1px 5px;border-radius:6px;margin-left:4px;font-weight:bold}
+.rank{color:var(--gold-deep);font-weight:bold}
+.name{color:var(--text-primary);font-weight:bold}
+.score{color:#8b6914;font-weight:bold}
 .draw-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
-.draw-card{background:#1f2b4a;border:1px solid #0f3460;border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:.2s}
-.draw-card:hover{background:#2a3a5e;border-color:#f0c040}
-.draw-card .tier{color:#f0c040;font-size:22px;font-weight:bold}
-.draw-card .price{color:#4fc3f7;font-size:13px;margin-top:3px}
-.draw-card .range{color:#888;font-size:11px;margin-top:3px}
+.draw-card{background:linear-gradient(135deg,#fffdf8,#fdf5e0);border:1px solid var(--border-gold);border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:.2s;box-shadow:0 2px 6px rgba(201,169,97,0.12)}
+.draw-card:hover{background:linear-gradient(135deg,#fff5d8,#f5ecd5);border-color:var(--gold-primary);box-shadow:0 4px 12px rgba(201,169,97,0.3);transform:translateY(-1px)}
+.draw-card .tier{color:var(--gold-deep);font-size:22px;font-weight:bold;text-shadow:0 1px 2px rgba(240,217,122,0.6)}
+.draw-card .price{color:#8b6914;font-size:13px;margin-top:3px;font-weight:bold}
+.draw-card .range{color:var(--text-muted);font-size:11px;margin-top:3px}
 .diff-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
-.diff-card{background:#1f2b4a;border:1px solid #0f3460;border-radius:8px;padding:12px;text-align:center;cursor:pointer}
-.diff-card:hover{background:#2a3a5e;border-color:#f0c040}
-.diff-card .dname{color:#f0c040;font-size:15px;font-weight:bold;margin-bottom:4px}
-.diff-card .dinfo{color:#aaa;font-size:11px;line-height:1.6}
-.diff-card .dfee{color:#4fc3f7;font-size:12px;margin-top:4px}
-.result-card{background:#1a1a2e;border:2px solid #f0c040;border-radius:8px;padding:12px;text-align:center;margin:6px 0}
-.result-card .r{color:#f0c040;font-size:11px}
-.result-card .n{color:#fff;font-size:15px;font-weight:bold;margin:3px 0}
-.result-card .v{color:#4fc3f7;font-size:13px}
+.diff-card{background:linear-gradient(135deg,#fffdf8,#fdf5e0);border:1px solid var(--border-gold);border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:.2s}
+.diff-card:hover{background:linear-gradient(135deg,#fff5d8,#f5ecd5);border-color:var(--gold-primary);box-shadow:0 4px 12px rgba(201,169,97,0.25)}
+.diff-card .dname{color:var(--gold-deep);font-size:15px;font-weight:bold;margin-bottom:4px;letter-spacing:2px}
+.diff-card .dinfo{color:var(--text-muted);font-size:11px;line-height:1.6}
+.diff-card .dfee{color:#8b6914;font-size:12px;margin-top:4px;font-weight:bold}
+.result-card{background:linear-gradient(135deg,#fffbe8,#f5ecd5);border:2px solid var(--gold-primary);border-radius:8px;padding:12px;text-align:center;margin:6px 0;box-shadow:0 2px 10px rgba(201,169,97,0.25)}
+.result-card .r{color:var(--gold-deep);font-size:11px;font-weight:bold;letter-spacing:1px}
+.result-card .n{color:var(--text-primary);font-size:15px;font-weight:bold;margin:3px 0}
+.result-card .v{color:#8b6914;font-size:13px}
 .vs-area{display:flex;justify-content:space-around;align-items:center;margin:14px 0;gap:8px;flex-wrap:wrap}
 .vs-side{flex:1;text-align:center;min-width:180px}
-.vs-vs{color:#f0c040;font-weight:bold;font-size:20px;padding:0 8px}
+.vs-vs{color:var(--gold-deep);font-weight:bold;font-size:20px;padding:0 8px;text-shadow:0 1px 2px rgba(240,217,122,0.6)}
 .battle-result-text{text-align:center;font-size:16px;font-weight:bold;margin-top:10px}
-.win{color:#2ecc71}
-.lose{color:#e74c3c}
-.hp-bar{background:#1a1a2e;border:1px solid #0f3460;border-radius:4px;height:14px;overflow:hidden;margin:6px 0}
-.hp-fill{height:100%;background:linear-gradient(90deg,#2ecc71,#27ae60);transition:width .3s}
-.hp-fill.opp{background:linear-gradient(90deg,#e74c3c,#c0392b)}
-.round-log{background:#1a1a2e;border:1px solid #0f3460;border-radius:6px;padding:10px;height:220px;overflow-y:auto;font-size:12px;line-height:1.7;margin:10px 0}
-.round-log div{padding:2px 0;border-bottom:1px solid #1f2b4a}
-.round-log .rwin{color:#2ecc71}
-.round-log .rlose{color:#e74c3c}
-.round-log .rinfo{color:#f0c040}
-.round-log .rcrit{color:#ff9f43;font-weight:bold}
-.admin-log{background:#1a1a2e;border:1px solid #0f3460;border-radius:6px;padding:8px;height:140px;overflow-y:auto;font-size:11px;color:#aaa;margin-top:8px}
-.admin-log div{padding:2px 0;border-bottom:1px solid #1f2b4a}
-.owned-list{background:#1a1a2e;border:1px solid #0f3460;border-radius:6px;padding:8px;max-height:120px;overflow-y:auto;font-size:12px;margin-top:8px}
-.owned-list div{padding:3px 0;border-bottom:1px solid #1f2b4a;color:#ccc}
-.hint{color:#888;font-size:12px;text-align:center;margin:6px 0}
+.win{color:#1e7d32;font-weight:bold}
+.lose{color:#b0301e;font-weight:bold}
+.hp-bar{background:#f5ecd5;border:1px solid var(--border-gold);border-radius:4px;height:14px;overflow:hidden;margin:6px 0}
+.hp-fill{height:100%;background:linear-gradient(90deg,#a8d8a0,#2e7d32);transition:width .3s}
+.hp-fill.opp{background:linear-gradient(90deg,#e8a5a0,#b0301e)}
+.round-log{background:#fffdf8;border:1px solid var(--border-gold);border-radius:6px;padding:10px;height:220px;overflow-y:auto;font-size:12px;line-height:1.7;margin:10px 0}
+.round-log div{padding:2px 0;border-bottom:1px solid var(--gold-light)}
+.round-log .rwin{color:#1e7d32}
+.round-log .rlose{color:#b0301e}
+.round-log .rinfo{color:var(--gold-deep);font-weight:bold}
+.round-log .rcrit{color:#d97706;font-weight:bold}
+.admin-log{background:#fffdf8;border:1px solid var(--border-gold);border-radius:6px;padding:8px;height:140px;overflow-y:auto;font-size:11px;color:var(--text-muted);margin-top:8px}
+.admin-log div{padding:2px 0;border-bottom:1px solid var(--gold-light)}
+.owned-list{background:#fffdf8;border:1px solid var(--border-gold);border-radius:6px;padding:8px;max-height:120px;overflow-y:auto;font-size:12px;margin-top:8px}
+.owned-list div{padding:3px 0;border-bottom:1px solid var(--gold-light);color:var(--text-secondary)}
+.hint{color:var(--text-muted);font-size:12px;text-align:center;margin:6px 0}
 .collect-group{margin-bottom:12px}
-.collect-group .gt{color:#f0c040;font-size:13px;margin-bottom:4px}
-.collect-empty{color:#666;text-align:center;padding:20px;font-size:13px}
+.collect-group .gt{color:var(--gold-deep);font-size:13px;margin-bottom:4px;font-weight:bold}
+.collect-empty{color:var(--text-muted);text-align:center;padding:20px;font-size:13px}
 .pick-list{max-height:300px;overflow-y:auto;margin-top:8px}
-.pick-item{background:#1a1a2e;border:1px solid #0f3460;border-radius:6px;padding:10px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:13px}
-.pick-item:hover{background:#1f2b4a;border-color:#f0c040}
-.pick-item.selected{background:rgba(79,195,247,.2);border-color:#4fc3f7}
-.detail-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1f2b4a;font-size:13px}
-.detail-row .dl{color:#888}
-.detail-row .dv{color:#4fc3f7;font-weight:bold}
-.rank-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1f2b4a;font-size:13px}
-.rank-row .rp{color:#f0c040;font-weight:bold}
-.intro-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#000,#1a1a2e,#0a0a1a);display:flex;justify-content:center;align-items:center;z-index:999;padding:20px}
-.intro-box{max-width:560px;width:100%;background:rgba(22,33,62,.95);border:2px solid #f0c040;border-radius:12px;padding:30px}
-.intro-box h2{color:#f0c040;text-align:center;font-size:24px;letter-spacing:6px;margin-bottom:20px}
-.intro-box p{color:#ccc;font-size:14px;line-height:2;text-indent:2em;margin-bottom:12px}
-.intro-box .intro-btn{display:block;width:100%;margin-top:20px;background:#f0c040;color:#1a1a2e;border:none;padding:14px;border-radius:8px;font-size:16px;font-weight:bold;letter-spacing:4px;cursor:pointer}
+.pick-item{background:#fffdf8;border:1px solid var(--border-gold);border-radius:6px;padding:10px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:13px;transition:.2s}
+.pick-item:hover{background:#fff8e6;border-color:var(--gold-primary);box-shadow:0 2px 6px rgba(201,169,97,0.2)}
+.pick-item.selected{background:linear-gradient(135deg,#fff5d8,#f5ecd5);border-color:var(--gold-primary);box-shadow:0 0 10px rgba(212,175,55,0.4)}
+.detail-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gold-light);font-size:13px}
+.detail-row .dl{color:var(--text-muted)}
+.detail-row .dv{color:#8b6914;font-weight:bold}
+.rank-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--gold-light);font-size:13px}
+.rank-row .rp{color:var(--gold-deep);font-weight:bold}
+.intro-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at center,#fffdf7 0%,#f5ecd5 50%,#e8d9b8 100%);display:flex;justify-content:center;align-items:center;z-index:999;padding:20px}
+.intro-box{max-width:560px;width:100%;background:rgba(255,255,255,.95);border:2px solid var(--gold-primary);border-radius:14px;padding:36px;box-shadow:0 0 60px rgba(212,175,55,0.5),inset 0 0 40px rgba(240,217,122,0.15);position:relative}
+.intro-box::before{content:"";position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:80%;height:2px;background:linear-gradient(90deg,transparent,var(--gold-bright),transparent)}
+.intro-box h2{color:var(--gold-deep);text-align:center;font-size:26px;letter-spacing:10px;margin-bottom:24px;text-shadow:0 1px 2px rgba(240,217,122,0.6)}
+.intro-box p{color:var(--text-secondary);font-size:14px;line-height:2.2;text-indent:2em;margin-bottom:14px}
+.intro-box .intro-btn{display:block;width:100%;margin-top:24px;background:linear-gradient(135deg,#f0d97a 0%,#c9a961 50%,#d4af37 100%);color:#fff;border:none;padding:14px;border-radius:8px;font-size:16px;font-weight:bold;letter-spacing:6px;cursor:pointer;font-family:inherit;text-shadow:0 1px 2px rgba(139,105,20,0.5);box-shadow:0 4px 16px rgba(201,169,97,0.5)}
+.intro-box .intro-btn:hover{background:linear-gradient(135deg,#f5e28a 0%,#d4b56b 50%,#e0bd47 100%);box-shadow:0 6px 20px rgba(201,169,97,0.7)}
 .base-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;max-width:900px;margin:0 auto}
-.base-card{background:#16213e;border:1px solid #0f3460;border-radius:10px;padding:18px;text-align:center;cursor:pointer}
-.base-card:hover{background:#1f2b4a;border-color:#f0c040}
-.base-card h3{color:#f0c040;font-size:17px;margin-bottom:6px}
-.base-card p{color:#888;font-size:12px}
-.shop-card{background:#1f2b4a;border:1px solid #0f3460;border-radius:8px;padding:12px;text-align:center;cursor:pointer;margin-bottom:6px}
-.shop-card:hover{background:#2a3a5e;border-color:#f0c040}
-.shop-card .sname{color:#fff;font-weight:bold;font-size:14px}
-.shop-card .sprice{color:#f0c040;font-size:13px;margin-top:4px}
-.shop-card .sdesc{color:#888;font-size:11px;margin-top:4px}
-.job-card{background:#1f2b4a;border:1px solid #0f3460;border-radius:8px;padding:14px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-.job-card:hover{background:#2a3a5e;border-color:#f0c040}
-.job-card .jname{color:#fff;font-weight:bold;font-size:14px}
-.job-card .jinfo{color:#888;font-size:11px;margin-top:3px}
-.job-card .jreward{color:#f0c040;font-size:14px;font-weight:bold}
+.base-card{background:linear-gradient(135deg,#ffffff 0%,#fffcf4 100%);border:1px solid var(--border-gold);border-radius:10px;padding:18px;text-align:center;cursor:pointer;transition:.2s;box-shadow:var(--shadow-soft)}
+.base-card:hover{background:linear-gradient(135deg,#fff8e6,#f5ecd5);border-color:var(--gold-primary);transform:translateY(-2px);box-shadow:0 6px 20px rgba(201,169,97,0.3)}
+.base-card h3{color:var(--gold-deep);font-size:17px;margin-bottom:6px;letter-spacing:2px}
+.base-card p{color:var(--text-muted);font-size:12px}
+.shop-card{background:linear-gradient(135deg,#fffdf8,#fdf5e0);border:1px solid var(--border-gold);border-radius:8px;padding:12px;text-align:center;cursor:pointer;margin-bottom:6px;transition:.2s}
+.shop-card:hover{background:linear-gradient(135deg,#fff5d8,#f5ecd5);border-color:var(--gold-primary);box-shadow:0 3px 10px rgba(201,169,97,0.25)}
+.shop-card .sname{color:var(--text-primary);font-weight:bold;font-size:14px}
+.shop-card .sprice{color:var(--gold-deep);font-size:13px;margin-top:4px;font-weight:bold}
+.shop-card .sdesc{color:var(--text-muted);font-size:11px;margin-top:4px}
+.job-card{background:linear-gradient(135deg,#fffdf8,#fdf5e0);border:1px solid var(--border-gold);border-radius:8px;padding:14px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:.2s}
+.job-card:hover{background:linear-gradient(135deg,#fff5d8,#f5ecd5);border-color:var(--gold-primary);box-shadow:0 3px 10px rgba(201,169,97,0.25)}
+.job-card .jname{color:var(--text-primary);font-weight:bold;font-size:14px}
+.job-card .jinfo{color:var(--text-muted);font-size:11px;margin-top:3px}
+.job-card .jreward{color:var(--gold-deep);font-size:14px;font-weight:bold}
 .inv-tabs{display:flex;gap:5px;margin-bottom:10px;justify-content:center}
-.inv-tabs button{background:#1a1a2e;color:#ccc;border:1px solid #0f3460;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px}
-.inv-tabs button.active{background:#f0c040;color:#1a1a2e;font-weight:bold}
+.inv-tabs button{background:#fffdf8;color:var(--text-secondary);border:1px solid var(--border-gold);padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;transition:.2s}
+.inv-tabs button.active{background:linear-gradient(135deg,#f0d97a,#c9a961);color:#fff;font-weight:bold;border-color:var(--gold-primary);text-shadow:0 1px 1px rgba(139,105,20,0.4)}
 .qty-row{display:flex;gap:6px;margin:8px 0}
-.qty-row button{flex:1;background:#1a1a2e;color:#ccc;border:1px solid #0f3460;padding:6px;border-radius:6px;cursor:pointer;font-size:13px}
-.qty-row button.selected{background:#f0c040;color:#1a1a2e;font-weight:bold}
-.gameover-box{max-width:520px;border:2px solid #e74c3c;background:#1a0a0a;border-radius:12px;padding:28px}
-.gameover-box h3{color:#e74c3c;font-size:20px;letter-spacing:4px;text-align:center;margin-bottom:20px}
-.gameover-box .go-text{color:#ccc;font-size:14px;line-height:2;text-indent:2em;text-align:center;margin-bottom:24px}
-.exit-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;color:#666;display:flex;justify-content:center;align-items:center;font-size:20px;letter-spacing:10px;z-index:9999}
-.nation-row{display:flex;justify-content:space-between;align-items:center;background:#1a1a2e;border:1px solid #0f3460;border-radius:6px;padding:10px;margin-bottom:6px}
-.nation-row .nname{color:#fff;font-weight:bold;font-size:14px}
-.nation-row .nval{color:#4fc3f7;font-weight:bold}
-.admin-section{background:#0f1a2e;border:1px solid #f0c040;border-radius:8px;padding:12px;margin-top:12px}
-.admin-section h4{color:#f0c040;margin-bottom:8px}
+.qty-row button{flex:1;background:#fffdf8;color:var(--text-secondary);border:1px solid var(--border-gold);padding:6px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;transition:.2s}
+.qty-row button.selected{background:linear-gradient(135deg,#f0d97a,#c9a961);color:#fff;font-weight:bold;text-shadow:0 1px 1px rgba(139,105,20,0.4)}
+.qty-row button:hover{border-color:var(--gold-primary)}
+.gameover-box{max-width:520px;border:2px solid #b0301e;background:linear-gradient(135deg,#fff5f4,#fce4e0);border-radius:12px;padding:28px}
+.gameover-box h3{color:#b0301e;font-size:20px;letter-spacing:6px;text-align:center;margin-bottom:20px}
+.gameover-box .go-text{color:var(--text-secondary);font-size:14px;line-height:2;text-indent:2em;text-align:center;margin-bottom:24px}
+.exit-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#faf7f0,#f0e8d8);color:var(--gold-deep);display:flex;justify-content:center;align-items:center;font-size:20px;letter-spacing:14px;z-index:9999;font-weight:bold}
+.nation-row{display:flex;justify-content:space-between;align-items:center;background:#fffdf8;border:1px solid var(--border-gold);border-radius:6px;padding:10px;margin-bottom:6px}
+.nation-row .nname{color:var(--text-primary);font-weight:bold;font-size:14px}
+.nation-row .nval{color:var(--gold-deep);font-weight:bold}
+.admin-section{background:linear-gradient(135deg,#fffbe8,#fdf5e0);border:1px solid var(--gold-primary);border-radius:8px;padding:12px;margin-top:12px;box-shadow:0 2px 8px rgba(201,169,97,0.15)}
+.admin-section h4{color:var(--gold-deep);margin-bottom:8px;font-weight:bold}
 .adj-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
 .adj-row button{padding:8px;font-size:12px}
-.guess-btn{background:#1f2b4a;border:2px solid #0f3460;color:#f0c040;font-size:24px;font-weight:bold;padding:20px;border-radius:10px;cursor:pointer;transition:.2s;flex:1}
-.guess-btn:hover{background:#2a3a5e;border-color:#f0c040;transform:scale(1.05)}
+.guess-btn{background:linear-gradient(135deg,#fffdf8,#fdf5e0);border:2px solid var(--border-gold);color:var(--gold-deep);font-size:24px;font-weight:bold;padding:20px;border-radius:10px;cursor:pointer;transition:.2s;flex:1;font-family:inherit;text-shadow:0 1px 2px rgba(240,217,122,0.6)}
+.guess-btn:hover{background:linear-gradient(135deg,#fff5d8,#f5ecd5);border-color:var(--gold-primary);transform:scale(1.05);box-shadow:0 4px 16px rgba(201,169,97,0.4)}
 .guess-area{display:flex;gap:14px;padding:14px 0}
-.slot-card{background:#1a1a2e;border:2px solid #0f3460;border-radius:10px;padding:12px;margin-bottom:8px}
-.slot-card.auto{border-color:#f0c040;background:linear-gradient(135deg,#1a1a2e,#2a1a0a)}
+.slot-card{background:#fffdf8;border:2px solid var(--border-gold);border-radius:10px;padding:12px;margin-bottom:8px;transition:.2s}
+.slot-card.auto{border-color:var(--gold-primary);background:linear-gradient(135deg,#fffbe8,#f5ecd5);box-shadow:0 2px 10px rgba(201,169,97,0.25)}
 .slot-card.empty{border-style:dashed;opacity:.7}
 .slot-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.slot-title{color:#f0c040;font-weight:bold;font-size:14px}
-.slot-title.auto-title{color:#ff9f43}
-.slot-tag{display:inline-block;background:#f0c040;color:#1a1a2e;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:bold}
-.slot-info{color:#aaa;font-size:11px;line-height:1.7;margin-bottom:8px}
-.slot-info span{color:#4fc3f7}
+.slot-title{color:var(--gold-deep);font-weight:bold;font-size:14px}
+.slot-title.auto-title{color:#d97706}
+.slot-tag{display:inline-block;background:linear-gradient(135deg,#f0d97a,#c9a961);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:bold;text-shadow:0 1px 1px rgba(139,105,20,0.4)}
+.slot-info{color:var(--text-muted);font-size:11px;line-height:1.7;margin-bottom:8px}
+.slot-info span{color:#8b6914;font-weight:bold}
 .slot-buttons{display:flex;gap:6px}
 .slot-buttons button{flex:1}
-.date-display{color:#f0c040;font-weight:bold;font-size:15px}
-.loan-card{background:#1a1a2e;border:2px solid #0f3460;border-radius:8px;padding:10px;margin-bottom:8px}
-.loan-card.overdue{border-color:#e74c3c;background:linear-gradient(135deg,#1a1a2e,#2a0a0a)}
-.loan-card.done{border-color:#27ae60;opacity:.7}
-.loan-title{color:#fff;font-weight:bold;font-size:13px;margin-bottom:4px}
-.loan-info{color:#aaa;font-size:11px;line-height:1.6}
-.loan-info span{color:#4fc3f7}
+.date-display{color:var(--gold-deep);font-weight:bold;font-size:15px}
+.loan-card{background:#fffdf8;border:2px solid var(--border-gold);border-radius:8px;padding:10px;margin-bottom:8px;transition:.2s}
+.loan-card.overdue{border-color:#b0301e;background:linear-gradient(135deg,#fff5f4,#fce4e0)}
+.loan-card.done{border-color:#1e7d32;background:linear-gradient(135deg,#f4fcf4,#e0f5e0);opacity:.85}
+.loan-title{color:var(--text-primary);font-weight:bold;font-size:13px;margin-bottom:4px}
+.loan-info{color:var(--text-muted);font-size:11px;line-height:1.6}
+.loan-info span{color:#8b6914;font-weight:bold}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:#f5ecd5}
+::-webkit-scrollbar-thumb{background:var(--gold-light);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--gold-primary)}
 </style>
 </head>
 <body>
@@ -200,7 +224,7 @@ tr.owned .name{color:#2ecc71}
   </div>
 </div>
 
-<div class="section-title">— 日常擂台 —</div>
+<div class="section-title">日常擂台</div>
 <div class="mode-grid">
   <div class="mode-card" onclick="openBattle('force')"><div class="badge">武力</div><h3>生死擂台</h3><p>武将一对一单挑</p></div>
   <div class="mode-card" onclick="openBattle('command')"><div class="badge">统率</div><h3>列兵布阵</h3><p>大军团指挥对决</p></div>
@@ -208,13 +232,13 @@ tr.owned .name{color:#2ecc71}
   <div class="mode-card" onclick="openBattle('logistics')"><div class="badge">后勤</div><h3>粮草先行</h3><p>补给定胜负</p></div>
 </div>
 
-<div class="section-title">— 主线任务 —</div>
+<div class="section-title">主线任务</div>
 <div class="main-quest" onclick="openMainQuest()">
   <h3>国运之战 · 华夏 vs 樱花</h3>
   <p>不花积分 · 对手从樱花名臣池随机 · 影响排行榜国运值</p>
 </div>
 
-<div class="section-title">— 基地 —</div>
+<div class="section-title">基地</div>
 <div class="base-grid">
   <div class="base-card" onclick="openShop()"><h3>🏪 商店</h3><p>购买好感度道具</p></div>
   <div class="base-card" onclick="openJob()"><h3>💼 打工</h3><p>消耗体力赚取积分</p></div>
@@ -280,7 +304,7 @@ tr.owned .name{color:#2ecc71}
   <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:10px">
     <button class="btn gold small" onclick="addPoints(1000)">+1000积分</button>
     <button class="btn gold small" onclick="addPoints(10000)">+10000积分</button>
-    <button class="btn red small" onclick="setPoints(0)">清零</button>
+    <button class="btn red small" onclick="setPoints(0)">积分清零</button>
     <button class="btn small" onclick="clearLog()">清空日志</button>
     <button class="btn small" onclick="closeModal('adminPanelModal')">关闭</button>
   </div>
@@ -302,11 +326,16 @@ tr.owned .name{color:#2ecc71}
   <div class="admin-section">
     <h4>💳 信用分调整</h4>
     <div class="nation-row"><span class="nname">当前信用</span><span class="nval" id="adminCreditDisplay">600</span></div>
-    <input id="adminCreditInput" type="number" value="0" placeholder="输入数值">
+    <input id="adminCreditInput" type="number" value="0" placeholder="输入数值（可为负）">
     <div class="adj-row">
       <button class="btn green" onclick="adminAdjustCredit(1)">+ 信用</button>
       <button class="btn red" onclick="adminAdjustCredit(-1)">− 信用</button>
       <button class="btn gold" onclick="adminSetCreditCustom()">设为指定值</button>
+    </div>
+    <div class="adj-row">
+      <button class="btn small" onclick="adminSetCreditCustom(0)">设为 0</button>
+      <button class="btn small" onclick="adminSetCreditCustom(300)">设为 300</button>
+      <button class="btn small" onclick="adminSetCreditCustom(600)">设为 600</button>
     </div>
   </div>
   <div class="admin-section">
@@ -988,7 +1017,7 @@ var JOBS = [
   { key:"council", name:"参加议会", cost:5, reward:50 }
 ];
 
-var SAVE_VERSION = 20;
+var SAVE_VERSION = 21;
 var SLOT_COUNT = 6;
 var AUTO_SLOT_KEY = "guoyun_slot_auto";
 var MANUAL_SLOT_PREFIX = "guoyun_slot_";
@@ -1121,7 +1150,6 @@ function calcLoanInfo(principal, months){
   return { totalReturn: totalActual, monthlyPayment: monthlyPayment, interest: interest };
 }
 
-/* ★ 提前还款：仅限未逾期时使用。本金 + 已过月数利息(至少1月) - 已还金额，上限为剩余应还 ★ */
 function calcEarlyRepay(loan){
   var monthlyInterest = Math.max(1, Math.round(loan.principal * LOAN_INTEREST_RATE));
   var monthsPassed = Math.max(1, loan.paidMonths);
@@ -1138,7 +1166,6 @@ function calcEarlyRepay(loan){
   };
 }
 
-/* 每日处理贷款 */
 function processLoansDaily(today){
   var events = [];
   state.loans.forEach(function(loan){
@@ -1254,11 +1281,11 @@ function renderLoanApply(){
   var html = "";
   LOAN_AMOUNTS.forEach(function(principal){
     var canBorrow = state.credit * CREDIT_PER_POINT >= principal;
-    var borderColor = canBorrow ? "#0f3460" : "#c0392b";
-    html += '<div style="background:#1a1a2e;border:1px solid ' + borderColor + ';border-radius:8px;padding:10px;margin-bottom:8px' + (canBorrow ? '' : ';opacity:0.55') + '">';
+    var borderColor = canBorrow ? "#e8d9b8" : "#c0392b";
+    html += '<div style="background:linear-gradient(135deg,#fffdf8,#fdf5e0);border:1px solid ' + borderColor + ';border-radius:8px;padding:10px;margin-bottom:8px' + (canBorrow ? '' : ';opacity:0.55') + '">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
-    html += '<span style="color:#f0c040;font-weight:bold;font-size:14px">贷款 ' + principal + ' 积分</span>';
-    if(!canBorrow) html += '<span style="color:#e74c3c;font-size:11px">信用不足（需 ' + (principal / CREDIT_PER_POINT) + '）</span>';
+    html += '<span style="color:#8b6914;font-weight:bold;font-size:14px">贷款 ' + principal + ' 积分</span>';
+    if(!canBorrow) html += '<span style="color:#b0301e;font-size:11px">信用不足（需 ' + (principal / CREDIT_PER_POINT) + '）</span>';
     html += '</div>';
     html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">';
     LOAN_TERMS.forEach(function(months){
@@ -1270,7 +1297,7 @@ function renderLoanApply(){
         'style="display:flex;flex-direction:column;align-items:center;padding:6px 3px;line-height:1.4">' +
         '<span>' + months + '月</span>' +
         '<span style="font-size:10px">月供' + info.monthlyPayment + '</span>' +
-        '<span style="font-size:9px;color:' + (selected ? '#1a1a2e' : '#888') + '">利息+' + info.interest + '</span>' +
+        '<span style="font-size:9px;color:' + (selected ? '#fff' : '#9b8b6f') + '">利息+' + info.interest + '</span>' +
         '</button>';
     });
     html += '</div>';
@@ -1287,31 +1314,29 @@ function renderLoanApply(){
 }
 function renderLoanActive(){
   var active = state.loans.filter(function(l){ return !l.completed; });
-  if(active.length === 0) return '<div style="color:#888;text-align:center;padding:20px;font-size:13px">暂无活跃贷款</div>';
+  if(active.length === 0) return '<div style="color:#9b8b6f;text-align:center;padding:20px;font-size:13px">暂无活跃贷款</div>';
   var html = "";
   active.forEach(function(loan){
     var idx = state.loans.indexOf(loan);
     var cls = "loan-card" + (loan.overdue ? " overdue" : "");
     var remainingPeriods = Math.ceil(loan.remaining / loan.monthlyPayment);
     html += '<div class="' + cls + '">';
-    html += '<div class="loan-title">贷款 #' + loan.id + ' · 本金 ' + loan.principal + ' 积分' + (loan.overdue ? ' <span style="color:#e74c3c">【逾期】</span>' : '') + '</div>';
+    html += '<div class="loan-title">贷款 #' + loan.id + ' · 本金 ' + loan.principal + ' 积分' + (loan.overdue ? ' <span style="color:#b0301e">【逾期】</span>' : '') + '</div>';
     html += '<div class="loan-info">';
     html += '月供 <span>' + loan.monthlyPayment + '</span>　已还 <span>' + loan.paidMonths + '/' + loan.months + '</span> 期<br>';
     html += '剩余应还 <span>' + loan.remaining + '</span> 积分　约 <span>' + remainingPeriods + '</span> 期<br>';
     html += '下次还款日 <span>' + loan.nextDue.y + '年' + loan.nextDue.m + '月' + loan.nextDue.d + '日</span><br>';
-    if(loan.overdue) html += '<span style="color:#e74c3c">已逾期 ' + loan.overdueDays + ' 天（每日扣1信用）</span>';
+    if(loan.overdue) html += '<span style="color:#b0301e">已逾期 ' + loan.overdueDays + ' 天（每日扣1信用）</span>';
     html += '</div>';
-
-    /* ★ 逾期后禁用提前还款，只保留全额结清 ★ */
     if(loan.overdue){
-      html += '<div style="margin-top:6px;color:#e74c3c;font-size:11px">⚠️ 已逾期，不支持提前还款（优惠），只能全额结清</div>';
+      html += '<div style="margin-top:6px;color:#b0301e;font-size:11px">⚠️ 已逾期，不支持提前还款（优惠），只能全额结清</div>';
       html += '<div style="display:flex;gap:6px;margin-top:6px">';
       html += '<button class="btn small" style="flex:1" disabled>提前还款</button>';
       html += '<button class="btn small red" style="flex:1" onclick="settleLoan(' + idx + ')">全额结清（' + loan.remaining + '）</button>';
       html += '</div>';
     } else {
       var early = calcEarlyRepay(loan);
-      html += '<div style="margin-top:6px;color:#2ecc71;font-size:11px">💡 提前还款：需 <b>' + early.cost + '</b> 积分（省' + (loan.remaining - early.cost) + '）</div>';
+      html += '<div style="margin-top:6px;color:#1e7d32;font-size:11px">💡 提前还款：需 <b>' + early.cost + '</b> 积分（省' + (loan.remaining - early.cost) + '）</div>';
       html += '<div style="display:flex;gap:6px;margin-top:6px">';
       html += '<button class="btn small green" style="flex:1" onclick="earlyRepayLoan(' + idx + ')">提前还款</button>';
       html += '<button class="btn small red" style="flex:1" onclick="settleLoan(' + idx + ')">全额结清</button>';
@@ -1322,7 +1347,7 @@ function renderLoanActive(){
   return html;
 }
 function renderLoanRecords(){
-  if(state.loans.length === 0) return '<div style="color:#888;text-align:center;padding:20px;font-size:13px">暂无任何贷款记录</div>';
+  if(state.loans.length === 0) return '<div style="color:#9b8b6f;text-align:center;padding:20px;font-size:13px">暂无任何贷款记录</div>';
   var html = "";
   var sorted = state.loans.slice().sort(function(a, b){
     if(a.overdue !== b.overdue) return a.overdue ? -1 : 1;
@@ -1333,23 +1358,17 @@ function renderLoanRecords(){
     var idx = state.loans.indexOf(loan);
     var cls = "loan-card" + (loan.completed ? " done" : (loan.overdue ? " overdue" : ""));
     var status = loan.completed ? '✅ 已结清' : (loan.overdue ? '⚠️ 逾期中' : '⏳ 还款中');
+    var statusColor = loan.completed ? '#1e7d32' : (loan.overdue ? '#b0301e' : '#8b6914');
     html += '<div class="' + cls + '">';
-    html += '<div class="loan-title">贷款 #' + loan.id + ' · ' + loan.principal + ' 积分 · ' + loan.months + '个月　<span style="color:' +
-      (loan.completed ? '#2ecc71' : (loan.overdue ? '#e74c3c' : '#f0c040')) + '">' + status + '</span></div>';
+    html += '<div class="loan-title">贷款 #' + loan.id + ' · ' + loan.principal + ' 积分 · ' + loan.months + '个月　<span style="color:' + statusColor + '">' + status + '</span></div>';
     html += '<div class="loan-info">';
     html += '月供 <span>' + loan.monthlyPayment + '</span>　已还 <span>' + loan.totalPaid + '</span> / <span>' + (loan.monthlyPayment * loan.months) + '</span><br>';
-    if(loan.overdue) html += '<span style="color:#e74c3c">已逾期 ' + loan.overdueDays + ' 天 · 剩余 ' + loan.remaining + '</span><br>';
+    if(loan.overdue) html += '<span style="color:#b0301e">已逾期 ' + loan.overdueDays + ' 天 · 剩余 ' + loan.remaining + '</span><br>';
     html += '</div>';
     if(!loan.completed){
-      if(loan.overdue){
-        html += '<div style="margin-top:6px">';
-        html += '<button class="btn small red" style="width:100%" onclick="settleLoan(' + idx + ')">全额结清（' + loan.remaining + ' 积分）</button>';
-        html += '</div>';
-      } else {
-        html += '<div style="margin-top:6px">';
-        html += '<button class="btn small red" style="width:100%" onclick="settleLoan(' + idx + ')">全额结清（' + loan.remaining + ' 积分）</button>';
-        html += '</div>';
-      }
+      html += '<div style="margin-top:6px">';
+      html += '<button class="btn small red" style="width:100%" onclick="settleLoan(' + idx + ')">全额结清（' + loan.remaining + ' 积分）</button>';
+      html += '</div>';
     }
     html += '</div>';
   });
@@ -1382,7 +1401,6 @@ function confirmTakeLoan(principal){
 function earlyRepayLoan(idx){
   var loan = state.loans[idx];
   if(!loan || loan.completed) return;
-  /* ★ 逾期贷款不允许提前还款（优惠），强制全额结清 ★ */
   if(loan.overdue){
     alert("该贷款已逾期，不能使用提前还款优惠。\n请使用「全额结清」。");
     return;
@@ -1477,7 +1495,7 @@ function renderSlotCard(key, title, data, isAuto){
   var dateStr = (data.dateY || 1) + "年" + (data.dateM || 1) + "月" + (data.dateD || 1) + "日";
   return '<div class="slot-card' + isAutoClass + '">' +
     '<div class="slot-header"><span class="slot-title' + titleClass + '">' + title + (isAuto ? '<span class="slot-tag">每日自动</span>' : '') + '</span>' +
-    '<span style="color:#888;font-size:11px">' + t + '</span></div>' +
+    '<span style="color:#9b8b6f;font-size:11px">' + t + '</span></div>' +
     '<div class="slot-info">日期 <span>' + dateStr + '</span>　积分 <span>' + data.points + '</span>　信用 <span>' + (data.credit || 600) + '</span><br>' +
     '华夏 <span>' + hxVal + '</span>　收藏 <span>' + (data.owned ? data.owned.length : 0) + '</span> 名</div>' +
     '<div class="slot-buttons">' +
@@ -1629,7 +1647,7 @@ function renderInvPanel(){
         if(cnt > 0){
           found = true;
           html += '<tr><td class="name">' + ITEM_DEFS[k].name + '</td><td class="score">' + t + '</td>' +
-            '<td style="color:#2ecc71">+' + FAVOR_GAIN[t] + '</td>' +
+            '<td style="color:#1e7d32">+' + FAVOR_GAIN[t] + '</td>' +
             '<td class="score">' + cnt + '</td>' +
             '<td><button class="btn small gold" onclick="openGive(\'item\',\'' + k + '\',\'' + t + '\')">赠送</button></td></tr>';
         }
@@ -1645,9 +1663,9 @@ function openGive(kind, key, tier){
   giveContext = { kind:kind, key:key, tier:tier, qty:1, targetIdx:-1 };
   var hint = document.getElementById("giveHint");
   if(kind === "token"){
-    hint.innerHTML = '「' + key + '的信物」<span style="color:#f0c040">只能赠送给同名名臣【' + key + '】</span>';
+    hint.innerHTML = '「' + key + '的信物」<span style="color:#8b6914">只能赠送给同名名臣【' + key + '】</span>';
   } else {
-    hint.innerHTML = '「' + ITEM_DEFS[key].name + '(' + tier + '级)」<span style="color:#2ecc71">每个 +' + FAVOR_GAIN[tier] + ' 好感</span>';
+    hint.innerHTML = '「' + ITEM_DEFS[key].name + '(' + tier + '级)」<span style="color:#1e7d32">每个 +' + FAVOR_GAIN[tier] + ' 好感</span>';
   }
   var listHtml = '<h4>选择目标名臣</h4><div class="pick-list">';
   state.owned.forEach(function(o, i){
@@ -1661,11 +1679,11 @@ function openGive(kind, key, tier){
       if(!allowed) reason = "（非同名）";
     }
     listHtml += '<div class="pick-item" onclick="' + (allowed ? "selectGiveTarget(" + i + ")" : "") + '" id="giveTarget-' + i + '" style="' + (allowed ? "" : "opacity:.3;cursor:not-allowed") + '">' +
-      '<div><div style="color:#fff;font-weight:bold;font-size:13px">' + o.dynasty + '_' + o.emperor + '_' + o.name +
-      '<span style="color:#f0c040;font-size:10px;margin-left:4px">[' + charTier + ']</span>' +
-      (reason ? '<span style="color:#e74c3c;font-size:11px">' + reason + '</span>' : '') + '</div>' +
-      '<div style="color:#888;font-size:11px">' + o.label + ' · 第' + o.rank + '名 · 好感' + (o.favor || 0) + '/' + FAVOR_MAX + '</div></div>' +
-      '<div style="color:#4fc3f7">' + o.value + '</div></div>';
+      '<div><div style="color:#3a2f1f;font-weight:bold;font-size:13px">' + o.dynasty + '_' + o.emperor + '_' + o.name +
+      '<span style="color:#8b6914;font-size:10px;margin-left:4px">[' + charTier + ']</span>' +
+      (reason ? '<span style="color:#b0301e;font-size:11px">' + reason + '</span>' : '') + '</div>' +
+      '<div style="color:#9b8b6f;font-size:11px">' + o.label + ' · 第' + o.rank + '名 · 好感' + (o.favor || 0) + '/' + FAVOR_MAX + '</div></div>' +
+      '<div style="color:#8b6914;font-weight:bold">' + o.value + '</div></div>';
   });
   listHtml += '</div>';
   document.getElementById("giveExtra").innerHTML = listHtml + (kind === "token" ?
@@ -1749,15 +1767,15 @@ function renderShop(){
   var html = "";
   Object.keys(ITEM_DEFS).forEach(function(k){
     var def = ITEM_DEFS[k];
-    html += '<div style="background:#1a1a2e;border:1px solid #0f3460;border-radius:8px;padding:12px;margin-bottom:8px">' +
-      '<div style="color:#f0c040;font-weight:bold;font-size:15px">' + def.name + '</div>' +
-      '<div style="color:#888;font-size:11px;margin-top:4px">对应：' +
+    html += '<div style="background:linear-gradient(135deg,#fffdf8,#fdf5e0);border:1px solid #e8d9b8;border-radius:8px;padding:12px;margin-bottom:8px">' +
+      '<div style="color:#8b6914;font-weight:bold;font-size:15px">' + def.name + '</div>' +
+      '<div style="color:#9b8b6f;font-size:11px;margin-top:4px">对应：' +
       def.boardKeys.map(function(b){ for(var i=0;i<BOARDS.length;i++){ if(BOARDS[i].key === b) return BOARDS[i].title; } return b; }).join(" / ") + '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
     Object.keys(SHOP_TIERS).forEach(function(t){
       html += '<div class="shop-card" onclick="buyItem(\'' + k + '\',\'' + t + '\')">' +
         '<div class="sname">' + t + '级</div>' +
-        '<div class="sprice">' + SHOP_TIERS[t].price + '积分</div>' +
+        '<div class="sprice">' + SHOP_TIERS[t].price + ' 积分</div>' +
         '<div class="sdesc">好感 +' + FAVOR_GAIN[t] + '</div></div>';
     });
     html += '</div></div>';
@@ -1782,7 +1800,7 @@ function renderJob(){
   JOBS.forEach(function(j){
     html += '<div class="job-card" onclick="doJob(\'' + j.key + '\')">' +
       '<div><div class="jname">' + j.name + '</div><div class="jinfo">消耗 ' + j.cost + ' 体力</div></div>' +
-      '<div class="jreward">+' + j.reward + '积分</div></div>';
+      '<div class="jreward">+' + j.reward + ' 积分</div></div>';
   });
   document.getElementById("jobList").innerHTML = html;
 }
@@ -1794,9 +1812,9 @@ function doJob(key){
   state.stamina -= j.cost;
   state.points += j.reward;
   renderTop(); save();
-  addLog("打工【" + j.name + "】+" + j.reward + "积分");
+  addLog("打工【" + j.name + "】+" + j.reward + " 积分");
   renderJob();
-  alert("打工完成！+" + j.reward + "积分");
+  alert("打工完成！+" + j.reward + " 积分");
 }
 
 function showResult(title, areaHtml, textHtml){
@@ -1877,7 +1895,7 @@ function renderRankPanel(){
       '<td class="rank">' + row[0] + '</td>' +
       '<td class="name">' + row[1] + '_' + row[2] + '_' + row[3] + (owned ? '<span class="owned-tag">已有</span>' : "") + '</td>' +
       '<td class="score">' + row[4] + '</td>' +
-      '<td style="color:#f0c040">' + getCharTier(row[0]) + '</td></tr>';
+      '<td style="color:#8b6914;font-weight:bold">' + getCharTier(row[0]) + '</td></tr>';
   });
   html += '</tbody></table>';
   document.getElementById("rankPanel").innerHTML = html;
@@ -1906,7 +1924,7 @@ function renderCollection(){
         '<td class="rank">' + o.rank + '</td>' +
         '<td class="name">' + o.dynasty + '_' + o.emperor + '_' + o.name + '</td>' +
         '<td class="score">' + o.value + '</td>' +
-        '<td style="color:#f0c040">' + (o.favor || 0) + '/' + FAVOR_MAX + '</td></tr>';
+        '<td style="color:#8b6914;font-weight:bold">' + (o.favor || 0) + '/' + FAVOR_MAX + '</td></tr>';
     });
     html += '</tbody></table></div>';
   });
@@ -1920,7 +1938,7 @@ function openDetail(idx){
   document.getElementById("detailTitle").textContent = item.dynasty + '_' + item.emperor + '_' + item.name;
   document.getElementById("detailPanel").innerHTML =
     '<div class="detail-row"><span class="dl">榜单</span><span class="dv">' + item.label + ' · 第' + item.rank + '名</span></div>' +
-    '<div class="detail-row"><span class="dl">等级</span><span class="dv" style="color:#f0c040">' + getCharTier(item.rank) + '</span></div>' +
+    '<div class="detail-row"><span class="dl">等级</span><span class="dv">' + getCharTier(item.rank) + '</span></div>' +
     '<div class="detail-row"><span class="dl">好感</span><span class="dv">' + (item.favor || 0) + ' / ' + FAVOR_MAX + '</span></div>' +
     '<div class="detail-row"><span class="dl">有效数值</span><span class="dv">' + s.effValue + '（+' + s.favorBonus + '）</span></div>' +
     '<div class="detail-row"><span class="dl">HP</span><span class="dv">' + s.hp + '</span></div>' +
@@ -1992,10 +2010,10 @@ function renderPickList(){
     }
     var s = getItemStats(o);
     html += '<div class="' + cls + '" onclick="togglePick(' + idx + ')">' +
-      '<div><div style="color:#fff;font-weight:bold;font-size:13px">' + o.name +
-      '<span style="color:#f0c040;font-size:10px;margin-left:4px">[' + getCharTier(o.rank) + ']</span></div>' +
-      '<div style="color:#888;font-size:11px">' + o.label + ' · 第' + o.rank + '名 · 好感' + (o.favor || 0) + '</div></div>' +
-      '<div style="color:#4fc3f7">' + s.effValue + '</div></div>';
+      '<div><div style="color:#3a2f1f;font-weight:bold;font-size:13px">' + o.name +
+      '<span style="color:#8b6914;font-size:10px;margin-left:4px">[' + getCharTier(o.rank) + ']</span></div>' +
+      '<div style="color:#9b8b6f;font-size:11px">' + o.label + ' · 第' + o.rank + '名 · 好感' + (o.favor || 0) + '</div></div>' +
+      '<div style="color:#8b6914;font-weight:bold">' + s.effValue + '</div></div>';
   });
   document.getElementById("pickList").innerHTML = html;
 }
@@ -2116,15 +2134,15 @@ function startDuel(ctx){
     '<div class="r">我方 · ' + ctx.title + '</div><div class="n">' + ctx.player.name + '</div>' +
     '<div class="v">攻' + pStats.atk + ' 防' + pStats.def + ' 暴' + pStats.critRate + '%/' + pStats.critDmg + '%</div>' +
     '<div class="hp-bar"><div class="hp-fill" id="playerHpBar" style="width:100%"></div></div>' +
-    '<div style="font-size:11px;color:#888">HP <span id="playerHpText">' + pStats.hp + '</span>/' + pStats.hp + '</div></div></div>' +
+    '<div style="font-size:11px;color:#9b8b6f">HP <span id="playerHpText">' + pStats.hp + '</span>/' + pStats.hp + '</div></div></div>' +
     '<div class="vs-vs">VS</div>' +
     '<div class="vs-side"><div class="result-card">' +
     '<div class="r">对手 · 樱花 · 第' + ctx.opp.rank + '名</div><div class="n">' + ctx.opp.name + '</div>' +
     '<div class="v">攻' + oStats.atk + ' 防' + oStats.def + ' 暴' + oStats.critRate + '%/' + oStats.critDmg + '%</div>' +
     '<div class="hp-bar"><div class="hp-fill opp" id="oppHpBar" style="width:100%"></div></div>' +
-    '<div style="font-size:11px;color:#888">HP <span id="oppHpText">' + oStats.hp + '</span>/' + oStats.hp + '</div></div></div>';
+    '<div style="font-size:11px;color:#9b8b6f">HP <span id="oppHpText">' + oStats.hp + '</span>/' + oStats.hp + '</div></div></div>';
   document.getElementById("roundLog").innerHTML =
-    '<div class="rinfo" style="text-align:center;padding:14px;font-size:14px;line-height:1.8">🎲 投掷骰子决定先手<br><span style="color:#888;font-size:12px">请猜单数还是双数</span></div>' +
+    '<div class="rinfo" style="text-align:center;padding:14px;font-size:14px;line-height:1.8">🎲 投掷骰子决定先手<br><span style="color:#9b8b6f;font-size:12px">请猜单数还是双数</span></div>' +
     '<div class="guess-area">' +
     '<button class="guess-btn" onclick="playerGuess(\'odd\')">单</button>' +
     '<button class="guess-btn" onclick="playerGuess(\'even\')">双</button>' +
@@ -2145,11 +2163,11 @@ function playerGuess(guess){
   var log = document.getElementById("roundLog");
   var parityText = diceParity === "odd" ? "单数" : "双数";
   var guessText = guess === "odd" ? "单" : "双";
-  var resultLine = correct ? '<span style="color:#2ecc71;font-weight:bold">✅ 猜中！我方先手</span>' : '<span style="color:#e74c3c;font-weight:bold">❌ 猜错！对方先手</span>';
+  var resultLine = correct ? '<span style="color:#1e7d32;font-weight:bold">✅ 猜中！我方先手</span>' : '<span style="color:#b0301e;font-weight:bold">❌ 猜错！对方先手</span>';
   log.innerHTML =
-    '<div class="rinfo">🎲 骰子结果：<span style="color:#fff;font-size:16px;font-weight:bold">' + dice + '</span> 点（' + parityText + '）</div>' +
+    '<div class="rinfo">🎲 骰子结果：<span style="color:#3a2f1f;font-size:16px;font-weight:bold">' + dice + '</span> 点（' + parityText + '）</div>' +
     '<div class="rinfo">你猜：' + guessText + ' → ' + resultLine + '</div>' +
-    '<div class="rinfo" style="color:#4fc3f7">⚔️ 战斗即将自动开始...</div>';
+    '<div class="rinfo" style="color:#8b6914">⚔️ 战斗即将自动开始...</div>';
   setTimeout(autoBattle, 1200);
 }
 function autoBattle(){
@@ -2206,11 +2224,11 @@ function finishDuel(){
       state.points += back;
       gainText = '<span class="win">胜利！返还 ' + back + ' 积分</span>';
       var ownedRef = state.owned.indexOf(dc.player) >= 0 ? dc.player : null;
-      if(ownedRef){ var delta = addFavor(ownedRef, 2); if(delta > 0) gainText += '<br><span style="color:#2ecc71">' + ownedRef.name + ' 好感+' + delta + '</span>'; }
+      if(ownedRef){ var delta = addFavor(ownedRef, 2); if(delta > 0) gainText += '<br><span style="color:#1e7d32">' + ownedRef.name + ' 好感+' + delta + '</span>'; }
     } else {
       gainText = '<span class="lose">败北！损失 ' + dc.fee + ' 积分</span>';
       var ownedRef2 = state.owned.indexOf(dc.player) >= 0 ? dc.player : null;
-      if(ownedRef2){ var delta2 = addFavor(ownedRef2, 1); if(delta2 > 0) gainText += '<br><span style="color:#4fc3f7">' + ownedRef2.name + ' 好感+' + delta2 + '</span>'; }
+      if(ownedRef2){ var delta2 = addFavor(ownedRef2, 1); if(delta2 > 0) gainText += '<br><span style="color:#8b6914">' + ownedRef2.name + ' 好感+' + delta2 + '</span>'; }
     }
   } else {
     var hxDelta = win ? 30 : -15;
@@ -2236,8 +2254,8 @@ function openLeaderboard(){
   var html = "";
   sorted.forEach(function(pair, i){
     var medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "　";
-    var color = pair[0] === "华夏" ? "#2ecc71" : pair[0] === "樱花" ? "#ff9fbf" : "#f0c040";
-    var warning = (pair[0] === "华夏" && pair[1] < 0) ? ' <span style="color:#e74c3c;font-size:11px">【危急】</span>' : '';
+    var color = pair[0] === "华夏" ? "#1e7d32" : pair[0] === "樱花" ? "#d97706" : "#8b6914";
+    var warning = (pair[0] === "华夏" && pair[1] < 0) ? ' <span style="color:#b0301e;font-size:11px">【危急】</span>' : '';
     html += '<div class="rank-row"><span>' + medal + ' <span style="color:' + color + ';font-weight:bold">' + pair[0] + '</span>' + warning + '</span><span class="rp">' + pair[1] + '</span></div>';
   });
   el.innerHTML = html;
@@ -2275,7 +2293,7 @@ function renderAdminLog(){
 function renderOwned(){
   var el = document.getElementById("ownedList");
   if(!el) return;
-  if(state.owned.length === 0){ el.innerHTML = '<div style="color:#666">暂无收藏</div>'; return; }
+  if(state.owned.length === 0){ el.innerHTML = '<div style="color:#9b8b6f">暂无收藏</div>'; return; }
   el.innerHTML = state.owned.map(function(o){
     return "<div>" + o.dynasty + "_" + o.emperor + "_" + o.name + " [" + getCharTier(o.rank) + "] · 好感" + (o.favor || 0) + "/" + FAVOR_MAX + "</div>";
   }).join("");
@@ -2289,12 +2307,14 @@ function adminAdjustPoints(sign){
   if(isNaN(amount) || amount <= 0){ alert("请输入正整数"); return; }
   state.points += sign * amount;
   renderTop(); renderAdminPoints(); save();
+  addLog("管理员调整积分 " + (sign>0?"+":"-") + amount);
 }
 function adminSetPointsCustom(val){
   var amount = (val !== undefined) ? parseInt(val) : parseInt(document.getElementById("adminPointsInput").value);
   if(isNaN(amount)){ alert("请输入数值"); return; }
   state.points = amount;
   renderTop(); renderAdminPoints(); save();
+  addLog("管理员设置积分 = " + amount);
 }
 function renderAdminCredit(){
   var el = document.getElementById("adminCreditDisplay");
@@ -2305,12 +2325,14 @@ function adminAdjustCredit(sign){
   if(isNaN(amount) || amount <= 0){ alert("请输入正整数"); return; }
   state.credit = Math.max(0, Math.min(CREDIT_MAX, state.credit + sign * amount));
   renderAdminCredit(); save();
+  addLog("管理员调整信用 " + (sign>0?"+":"-") + amount + " → " + state.credit);
 }
-function adminSetCreditCustom(){
-  var amount = parseInt(document.getElementById("adminCreditInput").value);
+function adminSetCreditCustom(val){
+  var amount = (val !== undefined) ? parseInt(val) : parseInt(document.getElementById("adminCreditInput").value);
   if(isNaN(amount)){ alert("请输入数值"); return; }
   state.credit = Math.max(0, Math.min(CREDIT_MAX, amount));
   renderAdminCredit(); save();
+  addLog("管理员设置信用 = " + state.credit);
 }
 function renderAdminNations(){
   var listEl = document.getElementById("adminNationList");
@@ -2318,7 +2340,7 @@ function renderAdminNations(){
   if(!listEl || !selEl) return;
   var html = "", opts = "";
   Object.keys(state.leaderboard).forEach(function(name){
-    var color = name === "华夏" ? "#2ecc71" : name === "樱花" ? "#ff9fbf" : "#f0c040";
+    var color = name === "华夏" ? "#1e7d32" : name === "樱花" ? "#d97706" : "#8b6914";
     html += '<div class="nation-row"><span class="nname" style="color:' + color + '">' + name + '</span><span class="nval">' + state.leaderboard[name] + '</span></div>';
     opts += '<option value="' + name + '">' + name + '</option>';
   });
