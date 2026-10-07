@@ -240,7 +240,7 @@ tr.owned .name{color:#2ecc71}
   <input id="adminItemQty" type="number" min="1" value="10" placeholder="数量">
   <div class="row"><button class="btn gold" onclick="adminAddItem()">添加道具</button></div>
   <h4>添加信物</h4>
-  <input id="adminTokenName" placeholder="输入人名">
+  <input id="adminTokenName" placeholder="输入人名（如：秦琼）">
   <input id="adminTokenQty" type="number" min="1" value="10" placeholder="数量">
   <div class="row"><button class="btn gold" onclick="adminAddToken()">添加信物</button></div>
   <h4>当前收藏</h4>
@@ -348,8 +348,7 @@ tr.owned .name{color:#2ecc71}
 
 <script>
 /* ============================================================
-   ★★★ 数据区：华夏百人 ★★★
-   把之前我发过的华夏百人完整数据粘贴到这里替换 ★★★
+   数据区：华夏百人（占位示例，请粘贴完整数据）
    ============================================================ */
 var DATA_HX = {
 force: [
@@ -571,8 +570,7 @@ advOverall: [
 };
 
 /* ============================================================
-   ★★★ 数据区：日本百人 ★★★
-   把之前我发过的日本百人完整数据粘贴到这里替换 ★★★
+   数据区：日本百人（占位示例，请粘贴完整数据）
    ============================================================ */
 var DATA_JP = {
 force: [
@@ -793,9 +791,7 @@ advOverall: [
 ]
 };
 
-/* ============================================================
-   常量配置（已全部改为 100 人范围）
-   ============================================================ */
+
 var BOARDS = [
   { key:"force",      title:"武力榜",   label:"武力值", type:"武将" },
   { key:"command",    title:"统率榜",   label:"统率值", type:"武将" },
@@ -846,11 +842,8 @@ var JOBS = [
   { key:"council",    name:"参加议会", cost:5, reward:50 }
 ];
 
-var SAVE_VERSION = 6;
+var SAVE_VERSION = 7;
 
-/* ============================================================
-   状态
-   ============================================================ */
 function defaultItems(){
   return {
     weapon:  { B:0, A:0, S:0, "S+":0 },
@@ -880,9 +873,6 @@ var currentDrawBoard = "force";
 var currentRankBoard = "force";
 var currentBattleMode = "force";
 
-/* ============================================================
-   存档
-   ============================================================ */
 function save(){
   state._v = SAVE_VERSION;
   try{ localStorage.setItem("guoyun_save", JSON.stringify(state)); }catch(e){}
@@ -937,9 +927,6 @@ function renderTop(){
   document.getElementById("day").textContent = state.day;
 }
 
-/* ============================================================
-   工具
-   ============================================================ */
 function pickFromData(dataRef, boardKey, minRank, maxRank){
   var all = (dataRef && dataRef[boardKey]) || [];
   if(all.length === 0) return null;
@@ -956,9 +943,6 @@ function isOwned(boardKey, rank){
   return state.owned.some(function(o){ return o.boardKey === boardKey && o.rank === rank; });
 }
 
-/* ============================================================
-   属性
-   ============================================================ */
 function calcFavorBonus(favor){ return Math.floor((favor || 0) / 10); }
 function calcBaseHp(rank){ return Math.round(100 + (100 - rank) * 9.09); }
 function calcBaseAtk(value){ return Math.round(value * 3); }
@@ -985,9 +969,6 @@ function getItemStats(item){
   };
 }
 
-/* ============================================================
-   开场
-   ============================================================ */
 function closeIntro(){
   state.introSeen = true; save();
   document.getElementById("introOverlay").style.display = "none";
@@ -995,9 +976,6 @@ function closeIntro(){
   renderTop();
 }
 
-/* ============================================================
-   信物 & 背包
-   ============================================================ */
 function addToken(name, dynasty, emperor){
   var t = null;
   for(var i=0;i<state.tokens.length;i++){ if(state.tokens[i].name === name) t = state.tokens[i]; }
@@ -1054,20 +1032,31 @@ function renderInvPanel(){
 }
 
 /* ============================================================
-   赠送
+   赠送（★ 信物只能给同名名臣 ★）
    ============================================================ */
 function openGive(kind, key, tier){
   giveContext = { kind:kind, key:key, tier:tier, qty:1, targetIdx:-1 };
   var hint = document.getElementById("giveHint");
-  hint.textContent = kind === "token" ?
-    "选择要赠送给哪位名臣「" + key + "的信物」" :
-    "选择要赠送给哪位名臣「" + ITEM_DEFS[key].name + "(" + tier + "级)」";
+  if(kind === "token"){
+    hint.innerHTML = '「' + key + '的信物」<span style="color:#f0c040">只能赠送给同名名臣【' + key + '】</span>';
+  } else {
+    hint.textContent = "选择要赠送给哪位名臣「" + ITEM_DEFS[key].name + "(" + tier + "级)」";
+  }
   var listHtml = '<h4>选择目标名臣</h4><div class="pick-list">';
   state.owned.forEach(function(o, i){
     var allowed = true;
-    if(kind === "item") allowed = ITEM_DEFS[key].boardKeys.indexOf(o.boardKey) >= 0;
+    var reason = "";
+    if(kind === "item"){
+      allowed = ITEM_DEFS[key].boardKeys.indexOf(o.boardKey) >= 0;
+      if(!allowed) reason = "（榜单不匹配）";
+    } else {
+      // ★ 信物：只能给同名名臣
+      allowed = (o.name === key);
+      if(!allowed) reason = "（非同名）";
+    }
     listHtml += '<div class="pick-item" onclick="' + (allowed ? "selectGiveTarget(" + i + ")" : "") + '" id="giveTarget-' + i + '" style="' + (allowed ? "" : "opacity:.3;cursor:not-allowed") + '">' +
-      '<div><div style="color:#fff;font-weight:bold;font-size:13px">' + o.dynasty + '_' + o.emperor + '_' + o.name + '</div>' +
+      '<div><div style="color:#fff;font-weight:bold;font-size:13px">' + o.dynasty + '_' + o.emperor + '_' + o.name +
+      (reason ? '<span style="color:#e74c3c;font-size:11px">' + reason + '</span>' : '') + '</div>' +
       '<div style="color:#888;font-size:11px">' + o.label + ' · 第' + o.rank + '名 · 好感' + (o.favor || 0) + '</div></div>' +
       '<div style="color:#4fc3f7">' + o.value + '</div></div>';
   });
@@ -1102,7 +1091,13 @@ function confirmGive(){
   if(!gc || gc.targetIdx < 0){ alert("请选择目标名臣"); return; }
   var item = state.owned[gc.targetIdx];
   if(!item) return;
+
   if(gc.kind === "token"){
+    // ★ 二次校验：信物只能给同名名臣
+    if(item.name !== gc.key){
+      alert("「" + gc.key + "的信物」只能赠送给【" + gc.key + "】本人！");
+      return;
+    }
     var bonusType = document.getElementById("giveBonusType").value;
     var tokenInfo = null;
     for(var i=0;i<state.tokens.length;i++){ if(state.tokens[i].name === gc.key) tokenInfo = state.tokens[i]; }
@@ -1145,9 +1140,6 @@ function confirmGive(){
   }
 }
 
-/* ============================================================
-   商店
-   ============================================================ */
 function openShop(){ renderShop(); openModal("shopModal"); }
 function renderShop(){
   var el = document.getElementById("shopGrid");
@@ -1181,9 +1173,6 @@ function buyItem(itemKey, tier){
   alert("购买成功！获得 " + ITEM_DEFS[itemKey].name + "(" + tier + "级) ×1");
 }
 
-/* ============================================================
-   打工
-   ============================================================ */
 function openJob(){ renderJob(); openModal("jobModal"); }
 function renderJob(){
   document.getElementById("jobStamina").textContent = state.stamina;
@@ -1210,9 +1199,6 @@ function doJob(key){
   alert("打工完成！+" + j.reward + "积分，剩余体力：" + state.stamina);
 }
 
-/* ============================================================
-   天数
-   ============================================================ */
 function nextDay(){
   if(!confirm("确定进入下一天？体力将重置为10。")) return;
   state.day += 1;
@@ -1221,9 +1207,6 @@ function nextDay(){
   alert("进入第 " + state.day + " 天，体力已重置为 10");
 }
 
-/* ============================================================
-   结果弹窗
-   ============================================================ */
 function showResult(title, areaHtml, textHtml){
   document.getElementById("resultModalTitle").textContent = title;
   document.getElementById("resultModalArea").innerHTML = areaHtml;
@@ -1231,9 +1214,6 @@ function showResult(title, areaHtml, textHtml){
   openModal("resultModal");
 }
 
-/* ============================================================
-   抽取
-   ============================================================ */
 function openDraw(){ currentDrawBoard = "force"; renderDrawTabs(); renderDrawPanel(); openModal("drawModal"); }
 function renderDrawTabs(){
   var t = document.getElementById("drawTabs");
@@ -1288,9 +1268,6 @@ function draw(boardKey, tierKey){
   showResult("🎴 抽取结果", areaHtml, '<span class="win">抽取完成！</span>');
 }
 
-/* ============================================================
-   榜单
-   ============================================================ */
 function openRanking(){ currentRankBoard = "force"; renderRankTabs(); renderRankPanel(); openModal("rankingModal"); }
 function renderRankTabs(){
   var t = document.getElementById("rankTabs");
@@ -1319,9 +1296,6 @@ function renderRankPanel(){
   document.getElementById("rankPanel").innerHTML = html;
 }
 
-/* ============================================================
-   我的名臣
-   ============================================================ */
 function openMyCollection(){ renderCollection(); openModal("collectionModal"); }
 function renderCollection(){
   var el = document.getElementById("collectionPanel");
@@ -1370,9 +1344,6 @@ function openDetail(idx){
   openModal("detailModal");
 }
 
-/* ============================================================
-   新手礼包（21-40 范围）
-   ============================================================ */
 function openGift(){
   if(state.giftClaimed){ alert("新手礼包已领取过！"); return; }
   openModal("giftModal");
@@ -1383,7 +1354,6 @@ function claimGift(){
   var mouBoards = ["intel","logistics","advOverall"];
   var wb = wuBoards[Math.floor(Math.random() * wuBoards.length)];
   var mb = mouBoards[Math.floor(Math.random() * mouBoards.length)];
-  // ★ 已改为 21-40 范围 ★
   var wu = pickFromData(DATA_HX, wb, 21, 40);
   var mou = pickFromData(DATA_HX, mb, 21, 40);
   if(!wu || !mou){ alert("数据缺失，请先补全华夏百人数据"); return; }
@@ -1411,9 +1381,6 @@ function claimGift(){
   addLog("新手礼包：武将" + wu[3] + "，谋士" + mou[3]);
 }
 
-/* ============================================================
-   选择出战
-   ============================================================ */
 function openPick(mode, battleMode, diffKey){
   var boardKey = battleMode ? BATTLE_CONFIG[battleMode].boardKey : null;
   var wuBoards = ["force","command","overall"];
@@ -1483,9 +1450,6 @@ function confirmPick(){
   }
 }
 
-/* ============================================================
-   日常对战
-   ============================================================ */
 function openBattle(mode){
   currentBattleMode = mode;
   var cfg = BATTLE_CONFIG[mode];
@@ -1531,9 +1495,6 @@ function startBattleWithPick(battleMode, diffKey, myItem){
   });
 }
 
-/* ============================================================
-   主线国运之战
-   ============================================================ */
 function openMainQuest(){
   var wuBoards = ["force","command","overall"];
   var mouBoards = ["intel","logistics","advOverall"];
@@ -1578,9 +1539,6 @@ function startMainQuestWithPick(myWuItem, myMouItem){
   });
 }
 
-/* ============================================================
-   回合制决斗
-   ============================================================ */
 function startDuel(ctx){
   var pStats = getItemStats(ctx.player);
   var oStats = getItemStats(ctx.opp);
@@ -1694,9 +1652,6 @@ function finishDuel(){
   addLog("【" + dc.title + "】" + dc.diffName + " → 我方" + dc.player.name + " vs 日本" + dc.opp.name + " → " + (win ? "胜" : "负"));
 }
 
-/* ============================================================
-   排行榜
-   ============================================================ */
 function openLeaderboard(){
   var el = document.getElementById("leaderboardPanel");
   var sorted = [];
@@ -1713,9 +1668,6 @@ function openLeaderboard(){
   openModal("leaderboardModal");
 }
 
-/* ============================================================
-   管理员
-   ============================================================ */
 function openAdmin(){
   if(state.admin){ renderOwned(); renderAdminLog(); openModal("adminPanelModal"); return; }
   openModal("adminLoginModal");
@@ -1792,9 +1744,6 @@ function adminAddToken(){
   alert("已添加 " + name + "的信物 ×" + qty);
 }
 
-/* ============================================================
-   重置 & 启动
-   ============================================================ */
 function resetGame(){
   if(!confirm("确定重置所有数据？")) return;
   localStorage.removeItem("guoyun_save");
