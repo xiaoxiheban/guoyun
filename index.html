@@ -18,6 +18,8 @@ h1{text-align:center;color:#f0c040;letter-spacing:3px;margin-bottom:4px;font-siz
 .btn.gold:hover{background:#ffd966}
 .btn.red{background:#c0392b}
 .btn.red:hover{background:#e74c3c}
+.btn.green{background:#27ae60}
+.btn.green:hover{background:#2ecc71}
 .btn.small{padding:5px 10px;font-size:12px}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .section-title{max-width:900px;margin:16px auto 10px;color:#f0c040;font-size:15px;letter-spacing:2px;text-align:center}
@@ -127,6 +129,17 @@ tr.owned .name{color:#2ecc71}
 .qty-row{display:flex;gap:6px;margin:8px 0}
 .qty-row button{flex:1;background:#1a1a2e;color:#ccc;border:1px solid #0f3460;padding:6px;border-radius:6px;cursor:pointer;font-size:13px}
 .qty-row button.selected{background:#f0c040;color:#1a1a2e;font-weight:bold}
+.gameover-box{max-width:520px;border:2px solid #e74c3c;background:#1a0a0a;border-radius:12px;padding:28px}
+.gameover-box h3{color:#e74c3c;font-size:20px;letter-spacing:4px;text-align:center;margin-bottom:20px}
+.gameover-box .go-text{color:#ccc;font-size:14px;line-height:2;text-indent:2em;text-align:center;margin-bottom:24px}
+.exit-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;color:#666;display:flex;justify-content:center;align-items:center;font-size:20px;letter-spacing:10px;z-index:9999}
+.nation-row{display:flex;justify-content:space-between;align-items:center;background:#1a1a2e;border:1px solid #0f3460;border-radius:6px;padding:10px;margin-bottom:6px}
+.nation-row .nname{color:#fff;font-weight:bold;font-size:14px}
+.nation-row .nval{color:#4fc3f7;font-weight:bold}
+.admin-section{background:#0f1a2e;border:1px solid #f0c040;border-radius:8px;padding:12px;margin-top:12px}
+.admin-section h4{color:#f0c040;margin-bottom:8px}
+.adj-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
+.adj-row button{padding:8px;font-size:12px}
 </style>
 </head>
 <body>
@@ -137,7 +150,7 @@ tr.owned .name{color:#2ecc71}
     <p>国运凋零之际，你穿进了这个相似又陌生的时代。</p>
     <p>科技高速发展，文明断层，华国上下五千年的历史，如今只有你一人知晓。</p>
     <p>曹操、白起、韩信、诸葛亮……那些曾在史书上叱咤风云的名字，如今沉睡在时间的废墟之中。</p>
-    <p>而海外，扶桑之国，自诩为东方霸主，国运值高悬一千。</p>
+    <p>而海外，樱花之国，自诩为东方霸主，国运值高悬一千。</p>
     <p>现在，就是你带着人民重新站回顶峰的时刻。</p>
     <button class="intro-btn" onclick="closeIntro()">开 始</button>
   </div>
@@ -170,8 +183,8 @@ tr.owned .name{color:#2ecc71}
 
 <div class="section-title">— 主线任务 —</div>
 <div class="main-quest" onclick="openMainQuest()">
-  <h3>国运之战 · 华夏 vs 日本</h3>
-  <p>不花积分 · 对手从日本名臣池随机 · 影响排行榜国运值</p>
+  <h3>国运之战 · 华夏 vs 樱花</h3>
+  <p>不花积分 · 对手从樱花名臣池随机 · 影响排行榜国运值</p>
 </div>
 
 <div class="section-title">— 基地 —</div>
@@ -222,13 +235,34 @@ tr.owned .name{color:#2ecc71}
     <button class="btn small" onclick="clearLog()">清空日志</button>
     <button class="btn small" onclick="closeModal('adminPanelModal')">关闭</button>
   </div>
-  <h4>添加指定华夏名臣到收藏</h4>
+
+  <!-- ★ 国运值调整 ★ -->
+  <div class="admin-section">
+    <h4>🌏 国运值调整</h4>
+    <div id="adminNationList"></div>
+    <h4 style="margin-top:10px">对所选国家操作</h4>
+    <select id="adminNationSelect"></select>
+    <input id="adminNationAmount" type="number" min="1" value="100" placeholder="数值">
+    <div class="adj-row">
+      <button class="btn green" onclick="adminAdjustNation(1)">+ 国运</button>
+      <button class="btn red" onclick="adminAdjustNation(-1)">− 国运</button>
+      <button class="btn gold" onclick="adminSetNation()">设为指定值</button>
+    </div>
+    <div class="adj-row">
+      <button class="btn small" onclick="adminAdjustNationQuick('华夏', -50)">华夏 -50</button>
+      <button class="btn small" onclick="adminAdjustNationQuick('华夏', 50)">华夏 +50</button>
+      <button class="btn small" onclick="adminAdjustNationQuick('樱花', -50)">樱花 -50</button>
+    </div>
+  </div>
+
+  <h4 style="margin-top:12px">添加指定华夏名臣到收藏</h4>
   <select id="adminCharBoard">
     <option value="force">武力榜</option><option value="command">统率榜</option><option value="overall">综合榜</option>
     <option value="intel">智力榜</option><option value="logistics">后勤榜</option><option value="advOverall">智囊综合榜</option>
   </select>
   <input id="adminCharRank" type="number" min="1" max="100" placeholder="输入排名（1-100）">
   <div class="row"><button class="btn gold" onclick="adminAddCharacter()">添加到收藏</button></div>
+
   <h4>添加道具（分等级）</h4>
   <select id="adminItemType">
     <option value="weapon">武器（武力）</option><option value="sandbox">沙盘（统率）</option>
@@ -239,10 +273,12 @@ tr.owned .name{color:#2ecc71}
   </select>
   <input id="adminItemQty" type="number" min="1" value="10" placeholder="数量">
   <div class="row"><button class="btn gold" onclick="adminAddItem()">添加道具</button></div>
+
   <h4>添加信物</h4>
   <input id="adminTokenName" placeholder="输入人名（如：秦琼）">
   <input id="adminTokenQty" type="number" min="1" value="10" placeholder="数量">
   <div class="row"><button class="btn gold" onclick="adminAddToken()">添加信物</button></div>
+
   <h4>当前收藏</h4>
   <div class="owned-list" id="ownedList"></div>
   <h4>操作日志</h4>
@@ -345,6 +381,17 @@ tr.owned .name{color:#2ecc71}
   <div id="leaderboardPanel"></div>
   <div class="row" style="margin-top:10px"><button class="btn" onclick="closeModal('leaderboardModal')">关闭</button></div>
 </div></div>
+
+<div class="modal" id="gameOverModal">
+  <div class="modal-box gameover-box">
+    <h3>⚠ 国运清零</h3>
+    <p class="go-text">国运清零。<br>你所在的国家华夏由于国运值跌至负数，即将抹除。</p>
+    <div class="row">
+      <button class="btn red" onclick="restartGame()">重新开始</button>
+      <button class="btn" onclick="exitGame()">退出游戏</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ============================================================
@@ -570,7 +617,7 @@ advOverall: [
 };
 
 /* ============================================================
-   数据区：日本百人（占位示例，请粘贴完整数据）
+   数据区：樱花百人（占位示例，请粘贴完整数据）
    ============================================================ */
 var DATA_JP = {
 force: [
@@ -835,7 +882,6 @@ var SHOP_TIERS = {
   "S+": { price:200, gain:35 }
 };
 
-/* ★ 新增：等级映射 & 道具可用性检查 ★ */
 var TIER_ORDER = { "B":1, "A":2, "S":3, "S+":4 };
 function getCharTier(rank){
   if(rank <= 40) return "S+";
@@ -854,7 +900,7 @@ var JOBS = [
   { key:"council",    name:"参加议会", cost:5, reward:50 }
 ];
 
-var SAVE_VERSION = 8;
+var SAVE_VERSION = 10;
 
 function defaultItems(){
   return {
@@ -871,7 +917,7 @@ function defaultState(){
     giftClaimed: false, introSeen: false,
     owned: [], tokens: [], items: defaultItems(),
     admin: false, log: [],
-    leaderboard: { "华夏": 50, "日本": 1000 }
+    leaderboard: { "华夏": 50, "樱花": 1000 }
   };
 }
 
@@ -921,7 +967,7 @@ function load(){
   }
   if(p.leaderboard && typeof p.leaderboard === "object"){
     if(typeof p.leaderboard["华夏"] === "number") state.leaderboard["华夏"] = p.leaderboard["华夏"];
-    if(typeof p.leaderboard["日本"] === "number") state.leaderboard["日本"] = p.leaderboard["日本"];
+    if(typeof p.leaderboard["樱花"] === "number") state.leaderboard["樱花"] = p.leaderboard["樱花"];
   }
 }
 
@@ -988,6 +1034,32 @@ function closeIntro(){
   renderTop();
 }
 
+/* ============================================================
+   国运清零检测
+   ============================================================ */
+function checkGameOver(){
+  if(state.leaderboard["华夏"] < 0){
+    save();
+    closeModal("duelModal");
+    closeModal("leaderboardModal");
+    closeModal("resultModal");
+    closeModal("adminPanelModal");
+    setTimeout(function(){ openModal("gameOverModal"); }, 200);
+    return true;
+  }
+  return false;
+}
+function restartGame(){
+  localStorage.removeItem("guoyun_save");
+  location.reload();
+}
+function exitGame(){
+  document.body.innerHTML = '<div class="exit-screen">游 戏 已 退 出</div>';
+}
+
+/* ============================================================
+   信物 & 背包
+   ============================================================ */
 function addToken(name, dynasty, emperor){
   var t = null;
   for(var i=0;i<state.tokens.length;i++){ if(state.tokens[i].name === name) t = state.tokens[i]; }
@@ -1043,9 +1115,6 @@ function renderInvPanel(){
   }
 }
 
-/* ============================================================
-   赠送（信物只能给同名；道具需榜单纯 & 等级匹配）
-   ============================================================ */
 function openGive(kind, key, tier){
   giveContext = { kind:kind, key:key, tier:tier, qty:1, targetIdx:-1 };
   var hint = document.getElementById("giveHint");
@@ -1060,13 +1129,10 @@ function openGive(kind, key, tier){
     var reason = "";
     var charTier = getCharTier(o.rank);
     if(kind === "item"){
-      // 榜单限制
       if(ITEM_DEFS[key].boardKeys.indexOf(o.boardKey) < 0){
-        allowed = false;
-        reason = "（榜单不匹配）";
+        allowed = false; reason = "（榜单不匹配）";
       } else if(!canUseItem(tier, o.rank)){
-        allowed = false;
-        reason = "（" + charTier + "级角色，无法接受" + tier + "级道具）";
+        allowed = false; reason = "（" + charTier + "级角色，无法接受" + tier + "级道具）";
       }
     } else {
       allowed = (o.name === key);
@@ -1112,7 +1178,6 @@ function confirmGive(){
   if(!item) return;
 
   if(gc.kind === "token"){
-    // 二次校验：信物只能给同名名臣
     if(item.name !== gc.key){
       alert("「" + gc.key + "的信物」只能赠送给【" + gc.key + "】本人！");
       return;
@@ -1142,12 +1207,10 @@ function confirmGive(){
       '<div class="v">暴击伤害：' + item.critDmg + '% / 500%</div></div>',
       '<span class="win">赠送完成！</span>');
   } else {
-    // ★ 二次校验：道具等级 vs 角色等级
     if(!canUseItem(gc.tier, item.rank)){
       alert("【" + item.name + "】是" + getCharTier(item.rank) + "级角色（第" + item.rank + "名），无法接受" + gc.tier + "级道具！");
       return;
     }
-    // ★ 二次校验：榜单纯匹配
     if(ITEM_DEFS[gc.key].boardKeys.indexOf(item.boardKey) < 0){
       alert("该道具只能赠送给：" + ITEM_DEFS[gc.key].boardKeys.map(function(b){
         for(var i=0;i<BOARDS.length;i++){ if(BOARDS[i].key === b) return BOARDS[i].title; }
@@ -1425,7 +1488,7 @@ function openPick(mode, battleMode, diffKey){
   if(mode === "daily"){
     pool = state.owned.filter(function(o){ return o.boardKey === boardKey; });
     title = "选择出战 · " + BATTLE_CONFIG[battleMode].title;
-    hint = "从收藏中选一名" + BATTLE_CONFIG[battleMode].type + "，对手为日本名臣";
+    hint = "从收藏中选一名" + BATTLE_CONFIG[battleMode].type + "，对手为樱花名臣";
   } else {
     pool = state.owned.filter(function(o){ return wuBoards.indexOf(o.boardKey) >= 0 || mouBoards.indexOf(o.boardKey) >= 0; });
     title = "选择出战 · 国运之战";
@@ -1491,7 +1554,7 @@ function openBattle(mode){
   currentBattleMode = mode;
   var cfg = BATTLE_CONFIG[mode];
   document.getElementById("battleTitle").textContent = cfg.title + " · " + cfg.type;
-  document.getElementById("battleHint").textContent = "选择难度（对手为日本名臣）";
+  document.getElementById("battleHint").textContent = "选择难度（对手为樱花名臣）";
   renderDiffGrid();
   openModal("battleModal");
 }
@@ -1570,7 +1633,7 @@ function startMainQuestWithPick(myWuItem, myMouItem){
     critDmg: Math.min(500, (oppWuItem.critDmg + oppMouItem.critDmg) / 2)
   };
   startDuel({
-    mode: "main", title: "国运之战 · 华夏 vs 日本", diffName: "随机", fee: 0, mult: 0,
+    mode: "main", title: "国运之战 · 华夏 vs 樱花", diffName: "随机", fee: 0, mult: 0,
     player: playerCombined, opp: oppCombined,
     _myWu: myWuItem, _myMou: myMouItem
   });
@@ -1596,7 +1659,7 @@ function startDuel(ctx){
     '<div style="font-size:11px;color:#888">HP <span id="playerHpText">' + pStats.hp + '</span>/' + pStats.hp + '</div></div></div>' +
     '<div class="vs-vs">VS</div>' +
     '<div class="vs-side"><div class="result-card">' +
-    '<div class="r">对手 · 日本 · 第' + ctx.opp.rank + '名</div>' +
+    '<div class="r">对手 · 樱花 · 第' + ctx.opp.rank + '名</div>' +
     '<div class="n">' + ctx.opp.name + '</div>' +
     '<div class="v">攻' + oStats.atk + ' 防' + oStats.def + ' 暴' + oStats.critRate + '%/' + oStats.critDmg + '%</div>' +
     '<div class="hp-bar"><div class="hp-fill opp" id="oppHpBar" style="width:100%"></div></div>' +
@@ -1674,10 +1737,10 @@ function finishDuel(){
     }
   } else {
     var hxDelta = win ? 30 : -15;
-    var jpDelta = win ? -15 : 20;
-    state.leaderboard["华夏"] = Math.max(0, state.leaderboard["华夏"] + hxDelta);
-    state.leaderboard["日本"] = Math.max(0, state.leaderboard["日本"] + jpDelta);
-    gainText = win ? '<span class="win">国运昌隆！华夏 +30，日本 -15</span>' : '<span class="lose">国运受挫！华夏 -15，日本 +20</span>';
+    var yhDelta = win ? -15 : 20;
+    state.leaderboard["华夏"] += hxDelta;
+    state.leaderboard["樱花"] = Math.max(0, state.leaderboard["樱花"] + yhDelta);
+    gainText = win ? '<span class="win">国运昌隆！华夏 +30，樱花 -15</span>' : '<span class="lose">国运受挫！华夏 -15，樱花 +20</span>';
     if(dc._myWu) addFavor(dc._myWu, win ? 2 : 1);
     if(dc._myMou) addFavor(dc._myMou, win ? 2 : 1);
   }
@@ -1686,7 +1749,9 @@ function finishDuel(){
   document.getElementById("duelNextBtn").style.display = "none";
   document.getElementById("duelCloseBtn").style.display = "inline-block";
   renderTop(); save();
-  addLog("【" + dc.title + "】" + dc.diffName + " → 我方" + dc.player.name + " vs 日本" + dc.opp.name + " → " + (win ? "胜" : "负"));
+  addLog("【" + dc.title + "】" + dc.diffName + " → 我方" + dc.player.name + " vs 樱花" + dc.opp.name + " → " + (win ? "胜" : "负"));
+
+  setTimeout(function(){ if(state.leaderboard["华夏"] < 0){ checkGameOver(); } }, 400);
 }
 
 function openLeaderboard(){
@@ -1697,16 +1762,20 @@ function openLeaderboard(){
   var html = "";
   sorted.forEach(function(pair, i){
     var medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "　";
-    var color = pair[0] === "华夏" ? "#2ecc71" : pair[0] === "日本" ? "#e74c3c" : "#f0c040";
-    html += '<div class="rank-row"><span>' + medal + ' <span style="color:' + color + ';font-weight:bold">' + pair[0] + '</span></span><span class="rp">' + pair[1] + '</span></div>';
+    var color = pair[0] === "华夏" ? "#2ecc71" : pair[0] === "樱花" ? "#ff9fbf" : "#f0c040";
+    var warning = (pair[0] === "华夏" && pair[1] < 0) ? ' <span style="color:#e74c3c;font-size:11px">【危急】</span>' : '';
+    html += '<div class="rank-row"><span>' + medal + ' <span style="color:' + color + ';font-weight:bold">' + pair[0] + '</span>' + warning + '</span><span class="rp">' + pair[1] + '</span></div>';
   });
-  html += '<p class="hint" style="margin-top:12px">国运之战胜利：华夏+30，日本-15<br>国运之战失败：华夏-15，日本+20</p>';
+  html += '<p class="hint" style="margin-top:12px">国运之战胜利：华夏+30，樱花-15<br>国运之战失败：华夏-15，樱花+20<br><span style="color:#e74c3c">⚠️ 华夏国运跌至负数将触发抹除</span></p>';
   el.innerHTML = html;
   openModal("leaderboardModal");
 }
 
+/* ============================================================
+   管理员
+   ============================================================ */
 function openAdmin(){
-  if(state.admin){ renderOwned(); renderAdminLog(); openModal("adminPanelModal"); return; }
+  if(state.admin){ renderOwned(); renderAdminLog(); renderAdminNations(); openModal("adminPanelModal"); return; }
   openModal("adminLoginModal");
 }
 function adminLogin(){
@@ -1715,7 +1784,7 @@ function adminLogin(){
   if(u === "111" && p === "123456"){
     state.admin = true; save();
     closeModal("adminLoginModal");
-    renderOwned(); renderAdminLog();
+    renderOwned(); renderAdminLog(); renderAdminNations();
     openModal("adminPanelModal");
     addLog("管理员登录成功");
   } else { alert("账号或密码错误！"); }
@@ -1736,6 +1805,58 @@ function renderOwned(){
     return "<div>" + o.dynasty + "_" + o.emperor + "_" + o.name + " [" + getCharTier(o.rank) + "] · " + o.label + o.value + " · 第" + o.rank + "名 · 好感" + (o.favor || 0) + "</div>";
   }).join("");
 }
+
+/* ★ 管理员 · 国运值调整 ★ */
+function renderAdminNations(){
+  var listEl = document.getElementById("adminNationList");
+  var selEl = document.getElementById("adminNationSelect");
+  if(!listEl || !selEl) return;
+  var html = "";
+  var opts = "";
+  Object.keys(state.leaderboard).forEach(function(name){
+    var color = name === "华夏" ? "#2ecc71" : name === "樱花" ? "#ff9fbf" : "#f0c040";
+    html += '<div class="nation-row"><span class="nname" style="color:' + color + '">' + name + '</span>' +
+      '<span class="nval">' + state.leaderboard[name] + '</span></div>';
+    opts += '<option value="' + name + '">' + name + '</option>';
+  });
+  listEl.innerHTML = html;
+  // 尽量保持当前选择
+  var prev = selEl.value;
+  selEl.innerHTML = opts;
+  if(prev && state.leaderboard[prev] !== undefined) selEl.value = prev;
+}
+function adminAdjustNation(sign){
+  var nation = document.getElementById("adminNationSelect").value;
+  var amount = parseInt(document.getElementById("adminNationAmount").value);
+  if(!amount || amount <= 0){ alert("请输入正整数"); return; }
+  if(state.leaderboard[nation] === undefined){ alert("该国家不存在"); return; }
+  state.leaderboard[nation] += sign * amount;
+  save();
+  renderAdminNations();
+  addLog("管理员调整国运：" + nation + " " + (sign > 0 ? "+" : "-") + amount + " → " + state.leaderboard[nation]);
+  // 如果华夏变负 → 触发
+  if(state.leaderboard["华夏"] < 0){ checkGameOver(); }
+}
+function adminAdjustNationQuick(nation, delta){
+  if(state.leaderboard[nation] === undefined){ alert("该国家不存在"); return; }
+  state.leaderboard[nation] += delta;
+  save();
+  renderAdminNations();
+  addLog("管理员快捷调整：" + nation + " " + (delta > 0 ? "+" : "") + delta + " → " + state.leaderboard[nation]);
+  if(state.leaderboard["华夏"] < 0){ checkGameOver(); }
+}
+function adminSetNation(){
+  var nation = document.getElementById("adminNationSelect").value;
+  var amount = parseInt(document.getElementById("adminNationAmount").value);
+  if(isNaN(amount)){ alert("请输入数值（可为负）"); return; }
+  if(state.leaderboard[nation] === undefined){ alert("该国家不存在"); return; }
+  state.leaderboard[nation] = amount;
+  save();
+  renderAdminNations();
+  addLog("管理员设置国运：" + nation + " = " + amount);
+  if(state.leaderboard["华夏"] < 0){ checkGameOver(); }
+}
+
 function adminAddCharacter(){
   var boardKey = document.getElementById("adminCharBoard").value;
   var rank = parseInt(document.getElementById("adminCharRank").value);
@@ -1792,6 +1913,9 @@ try{
     document.getElementById("introOverlay").style.display = "none";
     document.getElementById("gameRoot").style.display = "block";
     renderTop();
+    if(state.leaderboard["华夏"] < 0){
+      setTimeout(function(){ openModal("gameOverModal"); }, 500);
+    }
   } else {
     document.getElementById("introOverlay").style.display = "flex";
     document.getElementById("gameRoot").style.display = "none";
