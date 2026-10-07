@@ -791,7 +791,6 @@ advOverall: [
 ]
 };
 
-
 var BOARDS = [
   { key:"force",      title:"武力榜",   label:"武力值", type:"武将" },
   { key:"command",    title:"统率榜",   label:"统率值", type:"武将" },
@@ -836,13 +835,26 @@ var SHOP_TIERS = {
   "S+": { price:200, gain:35 }
 };
 
+/* ★ 新增：等级映射 & 道具可用性检查 ★ */
+var TIER_ORDER = { "B":1, "A":2, "S":3, "S+":4 };
+function getCharTier(rank){
+  if(rank <= 40) return "S+";
+  if(rank <= 60) return "S";
+  if(rank <= 80) return "A";
+  return "B";
+}
+function canUseItem(itemTier, charRank){
+  var charTier = getCharTier(charRank);
+  return TIER_ORDER[itemTier] <= TIER_ORDER[charTier];
+}
+
 var JOBS = [
   { key:"deliver",    name:"送货",     cost:1, reward:5 },
   { key:"restaurant", name:"餐厅",     cost:3, reward:20 },
   { key:"council",    name:"参加议会", cost:5, reward:50 }
 ];
 
-var SAVE_VERSION = 7;
+var SAVE_VERSION = 8;
 
 function defaultItems(){
   return {
@@ -1032,7 +1044,7 @@ function renderInvPanel(){
 }
 
 /* ============================================================
-   赠送（★ 信物只能给同名名臣 ★）
+   赠送（信物只能给同名；道具需榜单纯 & 等级匹配）
    ============================================================ */
 function openGive(kind, key, tier){
   giveContext = { kind:kind, key:key, tier:tier, qty:1, targetIdx:-1 };
@@ -1040,22 +1052,29 @@ function openGive(kind, key, tier){
   if(kind === "token"){
     hint.innerHTML = '「' + key + '的信物」<span style="color:#f0c040">只能赠送给同名名臣【' + key + '】</span>';
   } else {
-    hint.textContent = "选择要赠送给哪位名臣「" + ITEM_DEFS[key].name + "(" + tier + "级)」";
+    hint.innerHTML = '「' + ITEM_DEFS[key].name + '(' + tier + '级)」<span style="color:#f0c040">只能赠送给同等级或更高级的角色</span>';
   }
   var listHtml = '<h4>选择目标名臣</h4><div class="pick-list">';
   state.owned.forEach(function(o, i){
     var allowed = true;
     var reason = "";
+    var charTier = getCharTier(o.rank);
     if(kind === "item"){
-      allowed = ITEM_DEFS[key].boardKeys.indexOf(o.boardKey) >= 0;
-      if(!allowed) reason = "（榜单不匹配）";
+      // 榜单限制
+      if(ITEM_DEFS[key].boardKeys.indexOf(o.boardKey) < 0){
+        allowed = false;
+        reason = "（榜单不匹配）";
+      } else if(!canUseItem(tier, o.rank)){
+        allowed = false;
+        reason = "（" + charTier + "级角色，无法接受" + tier + "级道具）";
+      }
     } else {
-      // ★ 信物：只能给同名名臣
       allowed = (o.name === key);
       if(!allowed) reason = "（非同名）";
     }
     listHtml += '<div class="pick-item" onclick="' + (allowed ? "selectGiveTarget(" + i + ")" : "") + '" id="giveTarget-' + i + '" style="' + (allowed ? "" : "opacity:.3;cursor:not-allowed") + '">' +
       '<div><div style="color:#fff;font-weight:bold;font-size:13px">' + o.dynasty + '_' + o.emperor + '_' + o.name +
+      '<span style="color:#f0c040;font-size:10px;margin-left:4px">[' + charTier + ']</span>' +
       (reason ? '<span style="color:#e74c3c;font-size:11px">' + reason + '</span>' : '') + '</div>' +
       '<div style="color:#888;font-size:11px">' + o.label + ' · 第' + o.rank + '名 · 好感' + (o.favor || 0) + '</div></div>' +
       '<div style="color:#4fc3f7">' + o.value + '</div></div>';
@@ -1093,7 +1112,7 @@ function confirmGive(){
   if(!item) return;
 
   if(gc.kind === "token"){
-    // ★ 二次校验：信物只能给同名名臣
+    // 二次校验：信物只能给同名名臣
     if(item.name !== gc.key){
       alert("「" + gc.key + "的信物」只能赠送给【" + gc.key + "】本人！");
       return;
@@ -1123,6 +1142,19 @@ function confirmGive(){
       '<div class="v">暴击伤害：' + item.critDmg + '% / 500%</div></div>',
       '<span class="win">赠送完成！</span>');
   } else {
+    // ★ 二次校验：道具等级 vs 角色等级
+    if(!canUseItem(gc.tier, item.rank)){
+      alert("【" + item.name + "】是" + getCharTier(item.rank) + "级角色（第" + item.rank + "名），无法接受" + gc.tier + "级道具！");
+      return;
+    }
+    // ★ 二次校验：榜单纯匹配
+    if(ITEM_DEFS[gc.key].boardKeys.indexOf(item.boardKey) < 0){
+      alert("该道具只能赠送给：" + ITEM_DEFS[gc.key].boardKeys.map(function(b){
+        for(var i=0;i<BOARDS.length;i++){ if(BOARDS[i].key === b) return BOARDS[i].title; }
+        return b;
+      }).join(" / "));
+      return;
+    }
     var cnt = (state.items[gc.key] && state.items[gc.key][gc.tier]) || 0;
     if(cnt <= 0){ alert("道具不足"); return; }
     var qty2 = Math.min(gc.qty, cnt);
@@ -1150,6 +1182,7 @@ function renderShop(){
       '<div style="color:#f0c040;font-weight:bold;font-size:15px">' + def.name + '</div>' +
       '<div style="color:#888;font-size:11px;margin-top:4px">对应：' +
       def.boardKeys.map(function(b){ for(var i=0;i<BOARDS.length;i++){ if(BOARDS[i].key === b) return BOARDS[i].title; } return b; }).join(" / ") + '</div>' +
+      '<div style="color:#888;font-size:11px;margin-top:2px">⚠️ 只可赠送给同等级或更高级角色</div>' +
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
     Object.keys(SHOP_TIERS).forEach(function(t){
       var tier = SHOP_TIERS[t];
@@ -1284,13 +1317,14 @@ function renderRankPanel(){
   var b = null;
   for(var i=0;i<BOARDS.length;i++){ if(BOARDS[i].key === currentRankBoard) b = BOARDS[i]; }
   var rows = (DATA_HX && DATA_HX[b.key]) || [];
-  var html = '<table><thead><tr><th>排名</th><th>朝代_皇帝_人名</th><th>' + b.label + '</th></tr></thead><tbody>';
+  var html = '<table><thead><tr><th>排名</th><th>朝代_皇帝_人名</th><th>' + b.label + '</th><th>等级</th></tr></thead><tbody>';
   rows.forEach(function(row){
     var owned = isOwned(b.key, row[0]);
     html += '<tr class="' + (owned ? "owned" : "") + '">' +
       '<td class="rank">' + row[0] + '</td>' +
       '<td class="name">' + row[1] + '_' + row[2] + '_' + row[3] + (owned ? '<span class="owned-tag">已有</span>' : "") + '</td>' +
-      '<td class="score">' + row[4] + '</td></tr>';
+      '<td class="score">' + row[4] + '</td>' +
+      '<td style="color:#f0c040">' + getCharTier(row[0]) + '</td></tr>';
   });
   html += '</tbody></table>';
   document.getElementById("rankPanel").innerHTML = html;
@@ -1312,13 +1346,14 @@ function renderCollection(){
     if(!b) return;
     var list = groups[k].slice().sort(function(a,c){ return a.rank - c.rank; });
     html += '<div class="collect-group"><div class="gt">' + b.title + '（共 ' + list.length + ' 个）· 点击查看详情</div>' +
-      '<table><thead><tr><th>排名</th><th>朝代_皇帝_人名</th><th>' + b.label + '</th><th>好感</th></tr></thead><tbody>';
+      '<table><thead><tr><th>排名</th><th>朝代_皇帝_人名</th><th>' + b.label + '</th><th>等级</th><th>好感</th></tr></thead><tbody>';
     list.forEach(function(o){
       var idx = state.owned.indexOf(o);
       html += '<tr class="owned" onclick="openDetail(' + idx + ')" style="cursor:pointer">' +
         '<td class="rank">' + o.rank + '</td>' +
         '<td class="name">' + o.dynasty + '_' + o.emperor + '_' + o.name + '</td>' +
         '<td class="score">' + o.value + '</td>' +
+        '<td style="color:#f0c040">' + getCharTier(o.rank) + '</td>' +
         '<td style="color:#f0c040">' + (o.favor || 0) + '</td></tr>';
     });
     html += '</tbody></table></div>';
@@ -1333,6 +1368,7 @@ function openDetail(idx){
   document.getElementById("detailTitle").textContent = item.dynasty + '_' + item.emperor + '_' + item.name;
   document.getElementById("detailPanel").innerHTML =
     '<div class="detail-row"><span class="dl">所属榜单</span><span class="dv">' + item.label + ' · 第' + item.rank + '名</span></div>' +
+    '<div class="detail-row"><span class="dl">角色等级</span><span class="dv" style="color:#f0c040">' + getCharTier(item.rank) + '</span></div>' +
     '<div class="detail-row"><span class="dl">基础数值</span><span class="dv">' + item.value + '</span></div>' +
     '<div class="detail-row"><span class="dl">❤️ 好感度</span><span class="dv">' + (item.favor || 0) + ' / 100</span></div>' +
     '<div class="detail-row"><span class="dl">⚔️ 有效数值</span><span class="dv">' + s.effValue + '（+' + s.favorBonus + '）</span></div>' +
@@ -1364,7 +1400,7 @@ function claimGift(){
   } else {
     var item = buildOwnedItem(wb, wu);
     if(item) state.owned.push(item);
-    wuText = '<div class="result-card"><div class="r">武将</div><div class="n">' + wu[1] + '_' + wu[2] + '_' + wu[3] + '</div><div class="v">第' + wu[0] + '名 · 值' + wu[4] + '</div></div>';
+    wuText = '<div class="result-card"><div class="r">武将</div><div class="n">' + wu[1] + '_' + wu[2] + '_' + wu[3] + '</div><div class="v">第' + wu[0] + '名 · 值' + wu[4] + ' · ' + getCharTier(wu[0]) + '级</div></div>';
   }
   if(isOwned(mb, mou[0])){
     addToken(mou[3], mou[1], mou[2]);
@@ -1372,7 +1408,7 @@ function claimGift(){
   } else {
     var item2 = buildOwnedItem(mb, mou);
     if(item2) state.owned.push(item2);
-    mouText = '<div class="result-card"><div class="r">谋士</div><div class="n">' + mou[1] + '_' + mou[2] + '_' + mou[3] + '</div><div class="v">第' + mou[0] + '名 · 值' + mou[4] + '</div></div>';
+    mouText = '<div class="result-card"><div class="r">谋士</div><div class="n">' + mou[1] + '_' + mou[2] + '_' + mou[3] + '</div><div class="v">第' + mou[0] + '名 · 值' + mou[4] + ' · ' + getCharTier(mou[0]) + '级</div></div>';
   }
   state.giftClaimed = true;
   renderTop(); save();
@@ -1420,7 +1456,8 @@ function renderPickList(){
     var typeTag = isWu ? "武将" : "谋士";
     var s = getItemStats(o);
     html += '<div class="' + cls + '" onclick="togglePick(' + idx + ')">' +
-      '<div><div style="color:#fff;font-weight:bold;font-size:13px">' + o.dynasty + '_' + o.emperor + '_' + o.name + '</div>' +
+      '<div><div style="color:#fff;font-weight:bold;font-size:13px">' + o.dynasty + '_' + o.emperor + '_' + o.name +
+      '<span style="color:#f0c040;font-size:10px;margin-left:4px">[' + getCharTier(o.rank) + ']</span></div>' +
       '<div style="color:#888;font-size:11px">' + o.label + ' · 第' + o.rank + '名 · ' + typeTag + ' · 好感' + (o.favor || 0) + '</div></div>' +
       '<div style="color:#4fc3f7">' + s.effValue + '</div></div>';
   });
@@ -1696,7 +1733,7 @@ function renderOwned(){
   if(!el) return;
   if(state.owned.length === 0){ el.innerHTML = '<div style="color:#666">暂无收藏</div>'; return; }
   el.innerHTML = state.owned.map(function(o){
-    return "<div>" + o.dynasty + "_" + o.emperor + "_" + o.name + " · " + o.label + o.value + " · 第" + o.rank + "名 · 好感" + (o.favor || 0) + "</div>";
+    return "<div>" + o.dynasty + "_" + o.emperor + "_" + o.name + " [" + getCharTier(o.rank) + "] · " + o.label + o.value + " · 第" + o.rank + "名 · 好感" + (o.favor || 0) + "</div>";
   }).join("");
 }
 function adminAddCharacter(){
